@@ -43,37 +43,30 @@ st.markdown("""
     }
     .stTextInput>div>div:focus-within { border-color: #2ecc71 !important; box-shadow: none !important; }
 
-    /* ŠEDÝ NAVIGAČNÍ PANEL */
-    .nav-bar {
+    /* ŠEDÝ NAVIGAČNÍ PANEL (Větší obdélník) */
+    .nav-box {
         background-color: #1a1a1a;
-        padding: 15px;
-        border-radius: 10px;
+        padding: 30px;
+        border-radius: 12px;
         border: 1px solid #333;
-        margin-bottom: 20px;
+        margin-top: 10px;
+        margin-bottom: 30px;
     }
 
-    /* Styl tlačítek v menu (Menší obdélníky) */
+    /* Tlačítka uvnitř šedého panelu */
     div.stButton > button {
         background-color: #2ecc71 !important;
         color: white !important;
         border: none !important;
-        height: 45px !important;
+        height: 50px !important;
         width: 100% !important;
         border-radius: 4px !important;
-        font-weight: 700 !important;
+        font-weight: 800 !important;
         text-transform: uppercase !important;
         transition: 0.3s;
+        letter-spacing: 1px;
     }
-    div.stButton > button:hover { background-color: #27ae60 !important; }
-
-    /* Speciální styl pro ODHLÁSIT SE (Červené okénko) */
-    .logout-btn > div > button {
-        background-color: #e74c3c !important;
-        color: white !important;
-    }
-    .logout-btn > div > button:hover {
-        background-color: #c0392b !important;
-    }
+    div.stButton > button:hover { background-color: #27ae60 !important; transform: scale(1.02); }
 
     footer, header, #MainMenu { visibility: hidden; }
     </style>
@@ -115,7 +108,7 @@ if "authenticated" not in st.session_state:
 if "current_page" not in st.session_state:
     st.session_state.current_page = "OVERVIEW"
 
-# --- 4. LOGIN SCREEN ---
+# --- 4. LOGIN SCREEN (PONECHÁNA BEZE ZMĚNY) ---
 if not st.session_state.authenticated:
     for _ in range(7): st.write("\n")
     st.markdown('<div class="logo-container"><div class="logo-text"><span class="j-green">J</span>T | CAPITAL</div><div class="version-tag">TERMINAL v1.1</div></div>', unsafe_allow_html=True)
@@ -132,26 +125,25 @@ if not st.session_state.authenticated:
                 st.error("PRISTUP ZAMITNUT")
     st.stop()
 
-# --- 5. DASHBOARD (Po přihlášení) ---
+# --- 5. VNITŘEK APLIKACE (Po přihlášení) ---
 
-# Horní Logo
+# Horní Logo (Vždy na středu)
 st.markdown('<div class="logo-container"><div class="logo-text" style="font-size:45px;"><span class="j-green">J</span>T | CAPITAL</div></div>', unsafe_allow_html=True)
 
-# ŠEDÝ NAVIGAČNÍ PANEL S TLAČÍTKY
-st.markdown('<div class="nav-bar">', unsafe_allow_html=True)
-m1, m2, m3, m4 = st.columns([1, 1, 1, 1])
-with m1:
-    if st.button("OVERVIEW"): st.session_state.current_page = "OVERVIEW"; st.rerun()
-with m2:
-    if st.button("KALENDAR"): st.session_state.current_page = "KALENDAR"; st.rerun()
-with m3:
-    if st.button("FEED"): st.session_state.current_page = "FEED"; st.rerun()
-with m4:
-    # Červené tlačítko pro odhlášení
-    st.markdown('<div class="logout-btn">', unsafe_allow_html=True)
-    if st.button("ODHLASIT SE"): st.session_state.authenticated = False; st.rerun()
+# ŠEDÝ NAVIGAČNÍ OBODÉLNÍK
+col_center_1, col_center_2, col_center_3 = st.columns([0.2, 0.6, 0.2])
+with col_center_2:
+    st.markdown('<div class="nav-box">', unsafe_allow_html=True)
+    m1, m2, m3 = st.columns(3)
+    with m1:
+        if st.button("OVERVIEW"): st.session_state.current_page = "OVERVIEW"; st.rerun()
+    with m2:
+        if st.button("KALENDAR"): st.session_state.current_page = "KALENDAR"; st.rerun()
+    with m3:
+        if st.button("FEED"): st.session_state.current_page = "FEED"; st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
 
 # --- LOGIKA OBSAHU ---
 
