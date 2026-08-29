@@ -136,25 +136,24 @@ if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    # Odsazení odshora pro centrování loga
+    ## Odsazení odshora
     for _ in range(7): st.write("\n")
     
-    st.markdown('<div class="logo-text"><span class="j-letter">J</span>T | CAPITAL</div>', unsafe_allow_html=True)
+    # Logo JT | CAPITAL
+    st.markdown('<div class="logo-container"><div class="logo-text"><span class="j-green">J</span>T | CAPITAL</div></div>', unsafe_allow_html=True)
     
-    # Sloupce pro vycentrování celého bloku
+    # Vycentrovaný sloupec
     col1, col2, col3 = st.columns([1, 0.7, 1])
     with col2:
-        login_number = st.text_input("Přihlašovací číslo", placeholder="Zadejte číslo", label_visibility="collapsed")
-        password = st.text_input("Heslo", type="password", placeholder="Zadejte heslo", label_visibility="collapsed")
+        num = st.text_input("NUMBER", placeholder="PŘIHLAŠOVACÍ ČÍSLO", label_visibility="collapsed")
+        pwd = st.text_input("PASSWORD", type="password", placeholder="HESLO", label_visibility="collapsed")
         
-        st.write("") 
-        if st.button("PŘIHLÁSIT SE"):
-            # Kontrola: Číslo 1234, Heslo 1234
-            if login_number == "1234" and password == "1234":
+        if st.button("PŘIHLÁSIT SE", use_container_width=True):
+            if num == "1234" and pwd == "1234":
                 st.session_state.authenticated = True
                 st.rerun()
             else:
-                st.error("Neplatné údaje.")
+                st.error("PŘÍSTUP ZAMÍTNUT")
     st.stop()
 
 # --- 4. VNITŘEK APLIKACE ---
