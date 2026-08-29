@@ -8,48 +8,90 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. GRAFIKA A ANIMOVANÉ POZADÍ (CSS + JS) ---
+# --- 2. KOMPLEXNÍ STYLING (Login, Pozadí, Custom Slider) ---
 st.markdown("""
     <style>
-    /* Absolutní vyčištění Streamlit prvků */
+    /* Absolutní černé pozadí */
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], .stApp {
-        background: transparent !important;
-        background-color: #000000 !important;
+        background: #000000 !important;
     }
     
     #canvas-container {
         position: fixed;
         top: 0; left: 0; width: 100vw; height: 100vh;
-        z-index: -1;
-        background-color: #000000;
+        z-index: 0;
     }
 
     /* Logo JT | CAPITAL */
-    .logo-container { text-align: center; margin-top: 80px; margin-bottom: 20px; }
-    .logo-text { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 70px; letter-spacing: -3px; color: white; }
+    .logo-container { text-align: center; margin-top: 100px; margin-bottom: 30px; position: relative; z-index: 1; }
+    .logo-text { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 75px; letter-spacing: -4px; color: white; }
     .j-green { color: #2ecc71; }
 
-    /* Stylování inputů */
+    /* Input pole - sjednocený styl */
     .stTextInput input {
-        background-color: rgba(20, 20, 20, 0.9) !important;
+        background-color: rgba(15, 15, 15, 0.9) !important;
         color: white !important;
-        border: 1px solid #333 !important;
+        border: 1px solid #222 !important;
+        height: 50px !important;
+        border-radius: 4px !important;
         text-align: center !important;
-        border-radius: 5px !important;
+        font-size: 16px !important;
+        margin-bottom: 10px !important;
     }
+    .stTextInput input:focus { border-color: #2ecc71 !important; }
 
-    /* Schování zbytečností */
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    #MainMenu {visibility: hidden;}
+    /* --- CUSTOM SLIDE TO UNLOCK (Hacking Streamlit Slider) --- */
+    /* Schování labelu a čísel slideru */
+    div[data-testid="stSlider"] label, div[data-testid="stWidgetLabel"] { display: none; }
+    div[data-testid="stSliderTickBar"] { display: none; }
+    div[data-baseweb="slider"] > div:last-child { display: none; } /* Schová číslo u handle */
 
-    /* Úprava slideru (Slide to Unlock) */
+    /* Kolejnice slideru */
     div[data-baseweb="slider"] {
-        background-color: rgba(46, 204, 113, 0.1);
-        border-radius: 50px;
-        padding: 10px;
-        border: 1px solid #2ecc71;
+        background-color: rgba(20, 20, 20, 0.9) !important;
+        border: 1px solid #222 !important;
+        height: 50px !important;
+        padding: 0px 5px !important;
+        border-radius: 4px !important;
+        margin-top: 5px !important;
     }
+
+    /* Handle - Zelený čtverec s šipkou */
+    div[role="slider"] {
+        background-color: #2ecc71 !important;
+        border-radius: 4px !important;
+        width: 40px !important;
+        height: 40px !important;
+        border: none !important;
+        box-shadow: 0 0 10px rgba(46, 204, 113, 0.5) !important;
+        cursor: grab !important;
+    }
+    div[role="slider"]:active { cursor: grabbing !important; }
+    
+    /* Vložení šipky do handle */
+    div[role="slider"]::after {
+        content: "→";
+        color: white;
+        font-size: 24px;
+        font-weight: bold;
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    /* Zelený progres při tažení */
+    div[data-baseweb="slider"] div {
+        background-color: transparent; /* Reset výchozích barev */
+    }
+    /* Selektor pro levou část kolejnice (progress) */
+    div[data-baseweb="slider"] > div > div:first-child > div:first-child {
+        background-color: rgba(46, 204, 113, 0.3) !important; /* Průhledná zelená pro progres */
+        height: 40px !important;
+        border-radius: 4px !important;
+    }
+
+    /* Ostatní UI */
+    footer, header, #MainMenu { visibility: hidden; }
     </style>
 
     <div id="canvas-container"><canvas id="chartCanvas"></canvas></div>
@@ -62,26 +104,26 @@ st.markdown("""
     resize();
 
     const candles = [];
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 40; i++) {
         candles.push({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
-            w: 12, h: Math.random() * 80 + 20,
+            w: 10, h: Math.random() * 60 + 20,
             type: Math.random() > 0.5 ? '#2ecc71' : '#e74c3c',
-            speed: Math.random() * 0.5 + 0.2
+            speed: Math.random() * 0.4 + 0.1
         });
     }
 
     function animate() {
         ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.globalAlpha = 0.2; 
+        ctx.globalAlpha = 0.15; 
         candles.forEach(c => {
             c.x -= c.speed;
             if (c.x < -20) { c.x = canvas.width + 20; c.y = Math.random() * canvas.height; }
             ctx.fillStyle = c.type;
             ctx.fillRect(c.x, c.y, c.w, c.h);
-            ctx.fillRect(c.x + c.w/2 - 1, c.y - 15, 2, c.h + 30);
+            ctx.fillRect(c.x + c.w/2 - 1, c.y - 10, 2, c.h + 20);
         });
         requestAnimationFrame(animate);
     }
@@ -94,46 +136,33 @@ if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    # Logo
     st.markdown('<div class="logo-container"><div class="logo-text"><span class="j-green">J</span>T | CAPITAL</div></div>', unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns([1, 0.8, 1])
+    col1, col2, col3 = st.columns([1, 0.7, 1])
     with col2:
-        num = st.text_input("PŘIHLAŠOVACÍ ČÍSLO", placeholder="Zadejte číslo")
-        pwd = st.text_input("HESLO", type="password", placeholder="Zadejte heslo")
+        num = st.text_input("NUM", placeholder="PŘIHLAŠOVACÍ ČÍSLO", label_visibility="collapsed")
+        pwd = st.text_input("PWD", type="password", placeholder="HESLO", label_visibility="collapsed")
         
-        st.write("\n")
-        # SLIDE TO UNLOCK
-        unlock_slider = st.slider("POTAŽENÍM DOPRAVA VSTOUPÍTE", 0, 100, 0)
+        # POTAŽENÍM DOPRAVA (Slider)
+        unlock = st.slider("UNLOCK", 0, 100, 0, key="unlock_slider")
         
-        if unlock_slider == 100:
+        if unlock == 100:
             if num == "1234" and pwd == "admin":
                 st.session_state.authenticated = True
-                st.success("AUTORIZACE ÚSPĚŠNÁ...")
+                st.success("AUTORIZACE ÚSPĚŠNÁ")
                 st.rerun()
             else:
                 st.error("PŘÍSTUP ZAMÍTNUT")
-                st.info("Vraťte slider doleva a zkuste to znovu.")
+                # Reset slideru by vyžadoval rerun, pro teď stačí upozornění
+                st.info("Vraťte posuvník doleva a zadejte správné údaje.")
     st.stop()
 
-# --- 4. VNITŘEK APLIKACE (Po přihlášení) ---
-st.sidebar.markdown('<div style="font-size: 24px; font-weight: bold;"><span style="color: #2ecc71;">J</span>T | CAPITAL</div>', unsafe_allow_html=True)
-st.sidebar.markdown("---")
-menu = st.sidebar.radio("NAVIGACE", ["DASHBOARD", "KALENDÁŘ", "ANALÝZA"])
+# --- 4. VNITŘEK APLIKACE ---
+st.sidebar.markdown('### JT | CAPITAL')
+if st.sidebar.button("ODHLÁSIT SE"):
+    st.session_state.authenticated = False
+    st.rerun()
 
-if menu == "DASHBOARD":
-    st.title("Market Terminal Overview")
-    
-    # Live TradingView Ticker
-    st.components.v1.html("""
-        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-        { "symbols": [ {"proName": "FX_IDC:XAUUSD", "description": "GOLD"}, {"proName": "NASDAQ:NAS100", "description": "NAS100"}, {"proName": "FX:DXY", "description": "DXY"} ], "colorTheme": "dark", "isTransparent": true }
-        </script>
-    """, height=50)
-
-    st.markdown("""
-    <div style="background-color: rgba(20, 20, 20, 0.8); padding: 30px; border-radius: 15px; border: 1px solid #2ecc71; margin-top: 20px;">
-        <h2 style="color: #2ecc71; margin-top:0;">VÍTEJTE V JT | CAPITAL TERMINAL</h2>
-        <p>Všechny systémy jsou aktivní. Aktuálně sledujeme setupy na XAUUSD.</p>
-    </div>
-    """, unsafe_allow_html=True)
+st.title("🏛 Dashboard")
+st.write("Vítejte v uzavřené sekci JT | CAPITAL.")
+# Zde bude pokračovat tvůj dashboard...
