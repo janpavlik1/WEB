@@ -30,32 +30,39 @@ st.markdown(f"""
         background-color: rgba(0, 0, 0, 0.85); z-index: -1;
     }}
 
-    /* Odstranění výchozích ploch Streamlitu */
+    /* Odstranění výchozích ploch Streamlitu a iframe artefaktů */
     [data-testid="stMainBlockContainer"], [data-testid="stVerticalBlock"], 
-    [data-testid="stVerticalBlockBorderWrapper"], .stApp {{
+    [data-testid="stVerticalBlockBorderWrapper"], .stApp,
+    iframe, [data-testid="stCustomComponentV1"], [data-testid="stIFrame"] {{
         background-color: transparent !important;
+        border: none !important;
     }}
     
-    /* 2. PŘIHLAŠOVACÍ POLE - ZELENÉ OHRANIČENÍ */
+    /* 2. PŘIHLAŠOVACÍ POLE - VÝCHOZÍ ŠEDÝ RÁMEČEK */
     [data-testid="stTextInput"] > div,
     [data-testid="stTextInput"] > div > div,
     div[data-baseweb="input"],
     div[data-baseweb="base-input"],
     div[data-baseweb="input"] > div {{
-        border: 1.5px solid #2ecc71 !important;
+        border: 1px solid #333 !important;
         background-color: rgba(10, 10, 10, 0.75) !important;
         border-radius: 8px !important;
         box-shadow: none !important;
         outline: none !important;
+        transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
     }}
 
-    /* Zelená záře při psaní */
+    /* ZELENÉ ROZSVÍCENÍ PŘI NAJETÍ KURZOREM NEBO AKTIVACI POLE */
+    [data-testid="stTextInput"] > div:hover,
+    [data-testid="stTextInput"] > div > div:hover,
+    div[data-baseweb="input"]:hover,
+    div[data-baseweb="base-input"]:hover,
     [data-testid="stTextInput"] > div:focus-within,
     [data-testid="stTextInput"] > div > div:focus-within,
     div[data-baseweb="input"]:focus-within,
     div[data-baseweb="base-input"]:focus-within {{
         border: 1.5px solid #2ecc71 !important;
-        box-shadow: 0 0 12px rgba(46, 204, 113, 0.45) !important;
+        box-shadow: 0 0 12px rgba(46, 204, 113, 0.4) !important;
         outline: none !important;
     }}
     
@@ -93,7 +100,7 @@ st.markdown(f"""
         box-shadow: 0 0 15px rgba(46, 204, 113, 0.6) !important;
     }}
 
-    /* 5. PRŮHLEDNÉ KARTY (GLASSMORPHISM) */
+    /* 5. PRŮHLEDNÉ KARTY */
     .terminal-card {{
         background-color: rgba(10, 10, 10, 0.6) !important;
         backdrop-filter: blur(12px) !important;
@@ -137,42 +144,60 @@ st.markdown('<div class="logo-container"><div class="logo-text" style="font-size
 col_l, col_c, col_r = st.columns([0.1, 0.8, 0.1])
 
 with col_c:
-    # 1. KARTA S GRAFEM (Průhledný obdélník 60 % krytí)
+    # 1. KARTA S GRAFEM (Čistý černý průhledný box bez šedých podkladů)
     components.html("""
-        <div style="
-            background-color: rgba(10, 10, 10, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 20px 25px;
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-            box-sizing: border-box;
-        ">
-            <div class="tradingview-widget-container">
-              <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
-              {
-                "symbols": [ ["FX_IDC:XAUUSD|12M"] ],
-                "chartOnly": false, 
-                "width": "100%", 
-                "height": "350", 
-                "locale": "cs", 
-                "colorTheme": "dark",
-                "gridLineColor": "rgba(42, 46, 57, 0)", 
-                "fontColor": "#787b86", 
-                "isTransparent": true,
-                "showFloatingTooltip": true, 
-                "showVolume": false,
-                "lineColor": "#2ecc71", 
-                "topColor": "rgba(46, 204, 113, 0.15)", 
-                "bottomColor": "rgba(46, 204, 113, 0)"
-              }
-              </script>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                html, body {
+                    margin: 0;
+                    padding: 0;
+                    background: transparent !important;
+                    overflow: hidden;
+                }
+                * {
+                    box-sizing: border-box;
+                }
+            </style>
+        </head>
+        <body>
+            <div style="
+                background-color: rgba(10, 10, 10, 0.6);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                padding: 20px 25px;
+                border-radius: 15px;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+                width: 100%;
+            ">
+                <div class="tradingview-widget-container">
+                  <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
+                  {
+                    "symbols": [ ["FX_IDC:XAUUSD|12M"] ],
+                    "chartOnly": false, 
+                    "width": "100%", 
+                    "height": "350", 
+                    "locale": "cs", 
+                    "colorTheme": "dark",
+                    "gridLineColor": "rgba(42, 46, 57, 0)", 
+                    "fontColor": "#787b86", 
+                    "isTransparent": true,
+                    "showFloatingTooltip": true, 
+                    "showVolume": false,
+                    "lineColor": "#2ecc71", 
+                    "topColor": "rgba(46, 204, 113, 0.15)", 
+                    "bottomColor": "rgba(46, 204, 113, 0)"
+                  }
+                  </script>
+                </div>
             </div>
-        </div>
-    """, height=410)
+        </body>
+        </html>
+    """, height=400)
 
-    # 2. KARTA SE SENTIMENTEM (Průhledný obdélník 60 % krytí)
+    # 2. KARTA SE SENTIMENTEM
     st.markdown("""
     <div class="terminal-card">
         <div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 10px;">AI Analysis System</div>
