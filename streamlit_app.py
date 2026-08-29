@@ -87,19 +87,19 @@ st.markdown(f"""
     .logo-sub {{ color: #777; font-size: 11px; letter-spacing: 4px; margin-top: 6px; text-transform: uppercase; font-weight: 600; }}
     .j-green {{ color: #2ecc71 !important; }}
 
-    /* 4. TLAČÍTKO */
+    /* 4. TLAČÍTKA */
     div.stButton > button {{
         background-color: #2ecc71 !important;
         color: white !important;
         border: none !important;
-        height: 52px !important;
+        height: 48px !important;
         width: 100% !important;
         font-weight: 800 !important;
         text-transform: uppercase !important;
         border-radius: 8px !important;
         cursor: pointer !important;
         transition: all 0.2s ease-in-out;
-        margin-top: 5px;
+        margin-top: 6px;
     }}
     div.stButton > button:hover {{
         box-shadow: 0 0 15px rgba(46, 204, 113, 0.6) !important;
@@ -123,13 +123,13 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 
-# --- 3. SPOLEHLIVÝ PŘEKLADOVÝ ENGINE (MYMEMORY S VYSOKÝM LIMITEM) ---
+# --- 3. SPOLEHLIVÝ PŘEKLADOVÝ ENGINE (MYMEMORY) ---
 def translate_with_mymemory(text):
     if not text:
         return ""
     clean_txt = text.strip()
     
-    # 1. MyMemory API (s parametrem de pro navýšení denního limitu na 50 000 znaků)
+    # 1. MyMemory API
     try:
         url = "https://api.mymemory.translated.net/get"
         params = {
@@ -584,9 +584,9 @@ with col_c:
                 html, body { margin: 0; padding: 0; background: transparent !important; overflow: hidden; }
                 * { box-sizing: border-box; }
                 .terminal-card {
-                    background-color: rgba(10, 10, 10, 0.6);
-                    backdrop-filter: blur(12px);
-                    -webkit-backdrop-filter: blur(12px);
+                    background-color: rgba(10, 10, 10, 0.6) !important;
+                    backdrop-filter: blur(12px) !important;
+                    -webkit-backdrop-filter: blur(12px) !important;
                     padding: 20px 25px;
                     border-radius: 15px !important;
                     border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -676,6 +676,11 @@ with col_c:
         f'</div>'
     )
     st.markdown(full_fj_html, unsafe_allow_html=True)
+    
+    # Tlačítko pro manuální aktualizaci FinancialJuice
+    if st.button("🔄 AKTUALIZOVAT FINANCIALJUICE", key="btn_refresh_fj", use_container_width=True):
+        fetch_financialjuice_highlights.clear()
+        st.rerun()
 
     # --- 4. KARTA: FINNHUB (VŠECHNY AKTUÁLNÍ ZPRÁVY) ---
     finnhub_items = fetch_finnhub_news()
@@ -724,3 +729,8 @@ with col_c:
         f'</div>'
     )
     st.markdown(full_fh_html, unsafe_allow_html=True)
+
+    # Tlačítko pro manuální aktualizaci Finnhub
+    if st.button("🔄 AKTUALIZOVAT FINNHUB ZPRÁVY", key="btn_refresh_fh", use_container_width=True):
+        fetch_finnhub_news.clear()
+        st.rerun()
