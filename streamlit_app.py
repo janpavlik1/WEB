@@ -27,7 +27,7 @@ st.markdown(f"""
     }}
     [data-testid="stAppViewContainer"]::before {{
         content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background-color: rgba(0, 0, 0, 0.9); z-index: -1;
+        background-color: rgba(0, 0, 0, 0.85); z-index: -1;
     }}
 
     /* Odstranění výchozích ploch Streamlitu */
@@ -36,22 +36,27 @@ st.markdown(f"""
         background-color: transparent !important;
     }}
     
-    /* 2. OPRAVA PŘIHLAŠOVACÍCH POLÍ (Odstranění červených a modrých rámečků) */
+    /* 2. PŘIHLAŠOVACÍ POLE - ZELENÉ OHRANIČENÍ */
+    [data-testid="stTextInput"] > div,
+    [data-testid="stTextInput"] > div > div,
     div[data-baseweb="input"],
     div[data-baseweb="base-input"],
     div[data-baseweb="input"] > div {{
-        border: 1px solid #333 !important;
-        background-color: rgba(10, 10, 10, 0.95) !important;
-        border-radius: 6px !important;
+        border: 1.5px solid #2ecc71 !important;
+        background-color: rgba(10, 10, 10, 0.75) !important;
+        border-radius: 8px !important;
         box-shadow: none !important;
         outline: none !important;
     }}
 
-    /* Zelený rámeček pouze při psaní/aktivaci */
+    /* Zelená záře při psaní */
+    [data-testid="stTextInput"] > div:focus-within,
+    [data-testid="stTextInput"] > div > div:focus-within,
     div[data-baseweb="input"]:focus-within,
     div[data-baseweb="base-input"]:focus-within {{
-        border: 1px solid #2ecc71 !important;
-        box-shadow: 0 0 10px rgba(46, 204, 113, 0.2) !important;
+        border: 1.5px solid #2ecc71 !important;
+        box-shadow: 0 0 12px rgba(46, 204, 113, 0.45) !important;
+        outline: none !important;
     }}
     
     input, input:invalid, input:required, input:focus {{
@@ -80,19 +85,25 @@ st.markdown(f"""
         width: 100% !important;
         font-weight: 800 !important;
         text-transform: uppercase !important;
-        border-radius: 6px !important;
+        border-radius: 8px !important;
         cursor: pointer !important;
+        transition: all 0.2s ease-in-out;
+    }}
+    div.stButton > button:hover {{
+        box-shadow: 0 0 15px rgba(46, 204, 113, 0.6) !important;
     }}
 
-    /* 5. UNIFIED TERMINAL CARDS */
+    /* 5. PRŮHLEDNÉ KARTY (GLASSMORPHISM) */
     .terminal-card {{
-        background-color: rgba(10, 10, 10, 0.95) !important;
+        background-color: rgba(10, 10, 10, 0.6) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
         padding: 30px;
         border-radius: 15px;
-        border: 1px solid #222;
+        border: 1px solid rgba(255, 255, 255, 0.08);
         text-align: center;
         margin-top: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
     }}
 
     footer, header, #MainMenu, [data-testid="stSidebar"], [data-testid="InputInstructions"] {{ visibility: hidden; }}
@@ -106,7 +117,7 @@ if "authenticated" not in st.session_state:
 if not st.session_state.authenticated:
     for _ in range(8): 
         st.write("\n")
-    st.markdown('<div class="logo-container"><div class="logo-text"><span class="j-green">J</span>T | CAPITAL</div><div style="color:#444; font-size:10px; letter-spacing:3px;">TERMINAL v1.8</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="logo-container"><div class="logo-text"><span class="j-green">J</span>T | CAPITAL</div><div style="color:#555; font-size:10px; letter-spacing:3px;">TERMINAL v1.8</div></div>', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 0.7, 1])
     with col2:
@@ -126,14 +137,16 @@ st.markdown('<div class="logo-container"><div class="logo-text" style="font-size
 col_l, col_c, col_r = st.columns([0.1, 0.8, 0.1])
 
 with col_c:
-    # 1. KARTA S GRAFEM (Stylovaný černý box přímo uvnitř HTML komponenty)
+    # 1. KARTA S GRAFEM (Průhledný obdélník 60 % krytí)
     components.html("""
         <div style="
-            background-color: rgba(10, 10, 10, 0.95);
+            background-color: rgba(10, 10, 10, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             padding: 20px 25px;
             border-radius: 15px;
-            border: 1px solid #222;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
             box-sizing: border-box;
         ">
             <div class="tradingview-widget-container">
@@ -159,16 +172,16 @@ with col_c:
         </div>
     """, height=410)
 
-    # 2. KARTA SE SENTIMENTEM
+    # 2. KARTA SE SENTIMENTEM (Průhledný obdélník 60 % krytí)
     st.markdown("""
     <div class="terminal-card">
-        <div style="color: #666; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 10px;">AI Analysis System</div>
+        <div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 10px;">AI Analysis System</div>
         <div style="color: #2ecc71; font-weight: 900; font-size: 28px; letter-spacing: 2px;">BULLISH SENTIMENT</div>
-        <p style="color: #999; margin-top: 15px; font-size: 16px; line-height: 1.6;">
+        <p style="color: #bbb; margin-top: 15px; font-size: 16px; line-height: 1.6;">
             Zlato testuje denní rezistenci. Fundamentální data naznačují oslabování dolaru (DXY). 
             Sledujte možnost bullish breakoutu nad aktuální hladinu.
         </p>
-        <div style="border-top: 1px solid #222; margin-top: 20px; padding-top: 10px; color: #444; font-size: 10px;">
+        <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); margin-top: 20px; padding-top: 10px; color: #666; font-size: 10px;">
             SOURCE: REAL-TIME REUTERS FEED | AI ENGINE v1.8
         </div>
     </div>
