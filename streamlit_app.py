@@ -8,31 +8,25 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. KOMPLEXNÍ DESIGN (CSS) ---
+# --- 2. TOTÁLNÍ DESIGN (CSS) ---
 st.markdown("""
     <style>
-    /* Odstranění pozadí Streamlitu */
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stMainBlockContainer"], 
     [data-testid="stVerticalBlock"], [data-testid="stVerticalBlockBorderWrapper"], .stApp {
         background: transparent !important;
         background-color: transparent !important;
     }
-    
-    /* Skrytí sidebaru a nápovědy */
     [data-testid="stSidebar"] { display: none !important; }
     [data-testid="InputInstructions"] { display: none !important; }
     
-    /* Fixní černé pozadí */
     body { background-color: #000000 !important; }
     #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
     
-    /* Centrální Branding */
-    .logo-container { text-align: center; margin-top: 20px; margin-bottom: 5px; }
+    .logo-container { text-align: center; margin-top: 20px; margin-bottom: 30px; }
     .logo-text { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 60px; letter-spacing: -2px; color: white; }
     .j-green { color: #2ecc71 !important; }
-    .version-tag { color: #444; letter-spacing: 3px; font-size: 10px; margin-top: -10px; margin-bottom: 20px; text-align: center; }
-    
-    /* Vstupy Login - Centrování textu */
+
+    /* Login Inputs */
     .stTextInput>div>div>input {
         background-color: rgba(25, 25, 25, 0.9) !important;
         color: white !important;
@@ -41,32 +35,30 @@ st.markdown("""
         height: 55px !important;
         border-radius: 6px !important;
     }
-    .stTextInput>div>div:focus-within { border-color: #2ecc71 !important; box-shadow: none !important; }
-
-    /* ŠEDÝ NAVIGAČNÍ PANEL (Větší obdélník) */
-    .nav-box {
-        background-color: #1a1a1a;
-        padding: 30px;
-        border-radius: 12px;
-        border: 1px solid #333;
-        margin-top: 10px;
-        margin-bottom: 30px;
-    }
-
-    /* Tlačítka uvnitř šedého panelu */
+    
+    /* Login Button */
     div.stButton > button {
         background-color: #2ecc71 !important;
         color: white !important;
         border: none !important;
-        height: 50px !important;
+        height: 55px !important;
         width: 100% !important;
-        border-radius: 4px !important;
+        border-radius: 6px !important;
         font-weight: 800 !important;
         text-transform: uppercase !important;
-        transition: 0.3s;
-        letter-spacing: 1px;
     }
-    div.stButton > button:hover { background-color: #27ae60 !important; transform: scale(1.02); }
+
+    /* Sentiment Box */
+    .sentiment-card {
+        background-color: rgba(20, 20, 20, 0.9);
+        padding: 30px;
+        border-radius: 15px;
+        border: 1px solid #333;
+        text-align: center;
+        margin-top: 20px;
+    }
+    .sentiment-bullish { color: #2ecc71; font-weight: 900; font-size: 28px; letter-spacing: 2px; }
+    .sentiment-bearish { color: #e74c3c; font-weight: 900; font-size: 28px; letter-spacing: 2px; }
 
     footer, header, #MainMenu { visibility: hidden; }
     </style>
@@ -102,79 +94,68 @@ st.markdown("""
     </script>
     """, unsafe_allow_html=True)
 
-# --- 3. SESSION STATE ---
+# --- 3. LOGIN LOGIKA ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
-if "current_page" not in st.session_state:
-    st.session_state.current_page = "OVERVIEW"
 
-# --- 4. LOGIN SCREEN (PONECHÁNA BEZE ZMĚNY) ---
 if not st.session_state.authenticated:
     for _ in range(7): st.write("\n")
-    st.markdown('<div class="logo-container"><div class="logo-text"><span class="j-green">J</span>T | CAPITAL</div><div class="version-tag">TERMINAL v1.1</div></div>', unsafe_allow_html=True)
-    
+    st.markdown('<div class="logo-container"><div class="logo-text"><span class="j-green">J</span>T | CAPITAL</div></div>', unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 0.7, 1])
     with col2:
-        num = st.text_input("NUMBER", placeholder="PRIHLASOVACI CISLO", label_visibility="collapsed")
+        num = st.text_input("NUMBER", placeholder="PŘIHLAŠOVACÍ ČÍSLO", label_visibility="collapsed")
         pwd = st.text_input("PASSWORD", type="password", placeholder="HESLO", label_visibility="collapsed")
-        if st.button("PRIHLASIT SE", use_container_width=True):
+        if st.button("PŘIHLÁSIT SE", use_container_width=True):
             if num == "1234" and pwd == "1234":
                 st.session_state.authenticated = True
                 st.rerun()
             else:
-                st.error("PRISTUP ZAMITNUT")
+                st.error("PŘÍSTUP ZAMÍTNUT")
     st.stop()
 
-# --- 5. VNITŘEK APLIKACE (Po přihlášení) ---
+# --- 4. VNITŘEK TERMINÁLU (Po přihlášení) ---
 
-# Horní Logo (Vždy na středu)
+# Logo na střed
 st.markdown('<div class="logo-container"><div class="logo-text" style="font-size:45px;"><span class="j-green">J</span>T | CAPITAL</div></div>', unsafe_allow_html=True)
 
-# ŠEDÝ NAVIGAČNÍ OBODÉLNÍK
-col_center_1, col_center_2, col_center_3 = st.columns([0.2, 0.6, 0.2])
-with col_center_2:
-    st.markdown('<div class="nav-box">', unsafe_allow_html=True)
-    m1, m2, m3 = st.columns(3)
-    with m1:
-        if st.button("OVERVIEW"): st.session_state.current_page = "OVERVIEW"; st.rerun()
-    with m2:
-        if st.button("KALENDAR"): st.session_state.current_page = "KALENDAR"; st.rerun()
-    with m3:
-        if st.button("FEED"): st.session_state.current_page = "FEED"; st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+# Centrální layout pro XAUUSD
+col_l, col_c, col_r = st.columns([0.1, 0.8, 0.1])
 
-st.markdown("<br>", unsafe_allow_html=True)
-
-# --- LOGIKA OBSAHU ---
-
-if st.session_state.current_page == "OVERVIEW":
-    st.subheader("MARKET OVERVIEW")
-    
-    # Live Ticker Tape
+with col_c:
+    # 1. ŽIVÁ DATA XAUUSD (Widget)
     components.html("""
-        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-        { "symbols": [ {"proName": "FX_IDC:XAUUSD", "description": "GOLD"}, {"proName": "NASDAQ:NAS100", "description": "NASDAQ"}, {"proName": "CURRENCYCOM:DJ30", "description": "DOW JONES"} ], "colorTheme": "dark", "isTransparent": true, "displayMode": "adaptive", "locale": "cs" }
-        </script>
-    """, height=50)
+        <div class="tradingview-widget-container">
+          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
+          {
+          "symbols": [ ["FX_IDC:XAUUSD|12M"] ],
+          "chartOnly": false, "width": "100%", "height": "350", "locale": "cs", "colorTheme": "dark",
+          "gridLineColor": "rgba(42, 46, 57, 0)", "fontColor": "#787b86", "isTransparent": true,
+          "showFloatingTooltip": true, "showVolume": false,
+          "lineColor": "#2ecc71", "topColor": "rgba(46, 204, 113, 0.15)", "bottomColor": "rgba(46, 204, 113, 0)"
+        }
+          </script>
+        </div>
+    """, height=360)
 
-    # 3 Živé karty
-    c1, c2, c3 = st.columns(3)
-    with c1: components.html("""<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>{ "symbol": "FX_IDC:XAUUSD", "width": "100%", "height": "220", "locale": "cs", "dateRange": "12M", "colorTheme": "dark", "trendLineColor": "#2ecc71", "underLineColor": "rgba(46, 204, 113, 0.15)", "isTransparent": true }</script>""", height=230)
-    with c2: components.html("""<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>{ "symbol": "NASDAQ:NAS100", "width": "100%", "height": "220", "locale": "cs", "dateRange": "12M", "colorTheme": "dark", "trendLineColor": "#2ecc71", "underLineColor": "rgba(46, 204, 113, 0.15)", "isTransparent": true }</script>""", height=230)
-    with c3: components.html("""<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>{ "symbol": "CURRENCYCOM:DJ30", "width": "100%", "height": "220", "locale": "cs", "dateRange": "12M", "colorTheme": "dark", "trendLineColor": "#2ecc71", "underLineColor": "rgba(46, 204, 113, 0.15)", "isTransparent": true }</script>""", height=230)
+    # 2. AI MARKET SENTIMENT BOX
+    # Zde v budoucnu propojíme AI analýzu z Reuters/Bloomberg
+    # Pro demonstraci: Bullish scénář
+    st.markdown("""
+    <div class="sentiment-card">
+        <div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 12px; margin-bottom: 10px;">AI Terminal Analysis</div>
+        <div class="sentiment-bullish">BULLISH SENTIMENT</div>
+        <p style="color: #bbb; margin-top: 15px; font-size: 16px; line-height: 1.6;">
+            Zlato testuje denní rezistenci. Fundamentální data z Reuters naznačují oslabování dolaru (DXY). 
+            Sledujte možnost bullish breakoutu nad aktuální hladinu.
+        </p>
+        <div style="border-top: 1px solid #333; margin-top: 20px; padding-top: 10px; color: #555; font-size: 11px;">
+            POSLEDNÍ AKTUALIZACE: PŘED 2 MINUTAMI | SOURCE: AI ENGINE 1.0
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.markdown('<div style="background-color:rgba(25,25,25,0.8); padding:20px; border-radius:10px; border-left:4px solid #2ecc71;"><h4>MARKET SENTIMENT</h4><p>GOLD TESTUJE SUPPORT. INDEXY VYCRAVAJI NA NY SESSION.</p></div>', unsafe_allow_html=True)
-
-elif st.session_state.current_page == "KALENDAR":
-    st.subheader("EKONOMICKY KALENDAR")
-    components.html("""
-        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>
-        { "colorTheme": "dark", "isTransparent": true, "width": "100%", "height": "600", "locale": "cs", "importanceFilter": "-1,0,1" }
-        </script>
-    """, height=600)
-
-elif st.session_state.current_page == "FEED":
-    st.subheader("FUNDAMENTAL FEED")
-    st.info("ZDE BUDOU PUBLIKOVANY DENNI ANALYZY.")
-    st.markdown("---")
-    st.write("SLEDUJEME AKTUALNI POHYBY NA TRHU.")
+# Tlačítko pro odhlášení (skryté dole pro čistotu)
+st.markdown("<br><br>", unsafe_allow_html=True)
+if st.button("ODHLÁSIT SE", use_container_width=False):
+    st.session_state.authenticated = False
+    st.rerun()
