@@ -11,7 +11,7 @@ st.set_page_config(
 # --- 2. TOTÁLNÍ DESIGN (CSS) ---
 st.markdown("""
     <style>
-   /* Totální průhlednost všeho od Streamlitu */
+    /* Totální průhlednost všeho od Streamlitu */
     [data-testid="stAppViewContainer"], 
     [data-testid="stHeader"], 
     [data-testid="stMainBlockContainer"],
@@ -20,6 +20,11 @@ st.markdown("""
     .stApp {
         background: transparent !important;
         background-color: transparent !important;
+    }
+
+    /* Vypnutí nápovědy "Press Enter to apply" pod políčky */
+    [data-testid="InputInstructions"] {
+        display: none !important;
     }
 
     /* Fixní černé pozadí pod canvasem */
@@ -34,16 +39,20 @@ st.markdown("""
     }
 
     /* Branding Loga */
+    .logo-container {
+        text-align: center;
+        margin-bottom: 20px;
+    }
     .logo-text {
         font-family: 'Inter', sans-serif;
         font-weight: 800;
         font-size: 60px;
         letter-spacing: -2px;
-        text-align: center;
-        margin-bottom: 20px;
         color: white;
     }
-    .j-letter { color: #2ecc71; }
+    .j-green { 
+        color: #2ecc71 !important; 
+    }
     
     /* Vstupy (Inputy) */
     .stTextInput>div>div>input {
@@ -55,7 +64,7 @@ st.markdown("""
         border-radius: 5px !important;
     }
 
-    /* ODSTRANĚNÍ ČERVENÉHO/MODRÉHO RÁMEČKU při kliknutí */
+    /* ODSTRANĚNÍ RÁMEČKU při kliknutí */
     .stTextInput>div>div:focus-within {
         border-color: #2ecc71 !important;
         box-shadow: none !important;
@@ -85,6 +94,7 @@ st.markdown("""
         background-color: #27ae60 !important;
         transform: scale(1.01);
         box-shadow: 0 0 20px rgba(46, 204, 113, 0.3) !important;
+    }
 
     /* Skrytí menu */
     #MainMenu {visibility: hidden;}
@@ -139,7 +149,7 @@ if not st.session_state.authenticated:
     ## Odsazení odshora
     for _ in range(7): st.write("\n")
     
-    # Logo JT | CAPITAL
+    # Logo JT | CAPITAL (Opravená třída pro zelenou barvu)
     st.markdown('<div class="logo-container"><div class="logo-text"><span class="j-green">J</span>T | CAPITAL</div></div>', unsafe_allow_html=True)
     
     # Vycentrovaný sloupec
@@ -148,6 +158,7 @@ if not st.session_state.authenticated:
         num = st.text_input("NUMBER", placeholder="PŘIHLAŠOVACÍ ČÍSLO", label_visibility="collapsed")
         pwd = st.text_input("PASSWORD", type="password", placeholder="HESLO", label_visibility="collapsed")
         
+        st.write("") 
         if st.button("PŘIHLÁSIT SE", use_container_width=True):
             if num == "1234" and pwd == "1234":
                 st.session_state.authenticated = True
