@@ -207,7 +207,7 @@ def fetch_target_sources_sentiment():
         note = "Makro zprávy a signály ze sledovaných zdrojů naznačují prodejní tlak a možnou korekci na aktuálních úrovních."
     else:
         sentiment_label = "NEUTRAL SENTIMENT"
-        sentiment_color = "#f39c12"
+        sentiment_color = "#2ecc71"
         note = "Fundamentální zprávy vykazují vyrovnaný poměr sil. Trh vyčkává na další makroekonomické impulzy a zasedání centrálních bank."
 
     return {
@@ -259,7 +259,7 @@ st.markdown("""
 col_l, col_c, col_r = st.columns([0.08, 0.84, 0.08])
 
 with col_c:
-    # --- A) KARTA: SVĚTOVÝ ČAS A ŽIVÉ SEANCE (Běží každou sekundu) ---
+    # --- A) KARTA: SVĚTOVÝ ČAS (3 MĚSTA) A ŽIVÉ SEANCE (Zelená barva) ---
     components.html("""
         <!DOCTYPE html>
         <html>
@@ -279,10 +279,10 @@ with col_c:
                     color: white;
                 }
 
-                /* Horní řádek s hodinami */
+                /* Horní řádek s hodinami (3 města) */
                 .clocks-grid {
                     display: grid;
-                    grid-template-columns: repeat(4, 1fr);
+                    grid-template-columns: repeat(3, 1fr);
                     gap: 10px;
                     padding-bottom: 12px;
                     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -290,9 +290,9 @@ with col_c:
                     text-align: center;
                 }
                 .clock-item .city { font-size: 10px; color: #777; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 2px; }
-                .clock-item .time { font-size: 16px; font-weight: 700; color: #eee; font-variant-numeric: tabular-nums; }
+                .clock-item .time { font-size: 17px; font-weight: 700; color: #eee; font-variant-numeric: tabular-nums; }
 
-                /* Grid seancí */
+                /* Grid seancí (3 seance) */
                 .sessions-grid {
                     display: grid;
                     grid-template-columns: repeat(3, 1fr);
@@ -328,7 +328,7 @@ with col_c:
                 }
                 .badge-open { background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71; }
                 .badge-closed { background: rgba(255, 255, 255, 0.05); color: #777; border: 1px solid #444; }
-                .badge-weekend { background: rgba(243, 156, 18, 0.15); color: #f39c12; border: 1px solid #f39c12; }
+                .badge-weekend { background: rgba(46, 204, 113, 0.15); color: #2ecc71; border: 1px solid #2ecc71; }
 
                 .session-times { font-size: 11px; color: #888; margin-bottom: 6px; }
                 .session-countdown {
@@ -339,12 +339,12 @@ with col_c:
                 }
                 .session-countdown span { color: #2ecc71; }
                 .session-countdown.closed span { color: #e74c3c; }
-                .session-countdown.weekend span { color: #f39c12; }
+                .session-countdown.weekend span { color: #2ecc71; }
             </style>
         </head>
         <body>
             <div class="terminal-card">
-                <!-- 1. SVĚTOVÉ HODINY -->
+                <!-- 1. SVĚTOVÉ HODINY (PRAHA, LONDÝN, NEW YORK) -->
                 <div class="clocks-grid">
                     <div class="clock-item">
                         <div class="city">Praha (Lokální)</div>
@@ -357,10 +357,6 @@ with col_c:
                     <div class="clock-item">
                         <div class="city">New York</div>
                         <div class="time" id="time-ny">--:--:--</div>
-                    </div>
-                    <div class="clock-item">
-                        <div class="city">UTC</div>
-                        <div class="time" id="time-utc">--:--:--</div>
                     </div>
                 </div>
 
@@ -415,19 +411,17 @@ with col_c:
                     document.getElementById('time-prague').textContent = now.toLocaleTimeString('cs-CZ', {timeZone: 'Europe/Prague', hour12: false});
                     document.getElementById('time-london').textContent = now.toLocaleTimeString('en-GB', {timeZone: 'Europe/London', hour12: false});
                     document.getElementById('time-ny').textContent = now.toLocaleTimeString('en-US', {timeZone: 'America/New_York', hour12: false});
-                    document.getElementById('time-utc').textContent = now.toLocaleTimeString('en-GB', {timeZone: 'UTC', hour12: false});
 
-                    // Konfigurace seancí v českém čase (Hodina, Minuta)
                     let sessions = [
                         { id: 'london', name: 'LONDÝN', startH: 9, startM: 0, endH: 17, endM: 30 },
                         { id: 'ny', name: 'NEW YORK', startH: 14, startM: 0, endH: 23, endM: 0 },
                         { id: 'ws', name: 'WALL STREET', startH: 15, startM: 30, endH: 22, endM: 0 }
                     ];
 
-                    let dayOfWeek = now.getDay(); // 0 = Neděle, 6 = Sobota
+                    let dayOfWeek = now.getDay();
                     let currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-                    // Víkendová pauza: Sobota celá, Neděle do 23:00, Pátek po 23:00
+                    // Víkend: Sobota celá, Neděle do 23:00, Pátek po 23:00
                     let isWeekend = (dayOfWeek === 6) || (dayOfWeek === 0 && currentMinutes < 23 * 60) || (dayOfWeek === 5 && currentMinutes >= 23 * 60);
 
                     sessions.forEach(s => {
@@ -443,7 +437,6 @@ with col_c:
                             badge.className = 'session-badge badge-weekend';
                             badge.textContent = 'VÍKEND';
 
-                            // Výpočet do pondělního otevření
                             let daysUntilMonday = (8 - dayOfWeek) % 7;
                             if (daysUntilMonday === 0) daysUntilMonday = 7;
                             let mondayOpen = new Date(now);
@@ -461,7 +454,6 @@ with col_c:
                             endToday.setHours(s.endH, s.endM, 0, 0);
 
                             if (now >= startToday && now < endToday) {
-                                // SEANCE JE OTEVŘENÁ -> ODPOČET DO KONCE
                                 box.classList.add('active');
                                 badge.className = 'session-badge badge-open';
                                 badge.textContent = 'OTEVŘENO';
@@ -470,14 +462,12 @@ with col_c:
                                 countElem.className = 'session-countdown';
                                 countElem.innerHTML = 'Končí za: <span>' + formatDuration(diff) + '</span>';
                             } else {
-                                // SEANCE JE ZAVŘENÁ -> ODPOČET DO OTEVŘENÍ
                                 box.classList.remove('active');
                                 badge.className = 'session-badge badge-closed';
                                 badge.textContent = 'ZAVŘENO';
 
                                 let targetOpen = new Date(startToday);
                                 if (now >= endToday) {
-                                    // Už skončila dnes -> otevírá zítra (nebo v Po pokud je Pátek)
                                     targetOpen.setDate(targetOpen.getDate() + (dayOfWeek === 5 ? 3 : 1));
                                 }
 
