@@ -70,7 +70,7 @@ st.markdown(f"""
         text-align: center !important;
         color: white !important;
         font-size: 16px !important;
-        height: 55px !important;
+        height: 52px !important;
         background: transparent !important;
         border: none !important;
         outline: none !important;
@@ -78,9 +78,9 @@ st.markdown(f"""
         -webkit-appearance: none !important;
     }}
 
-    /* 3. BRANDING */
-    .logo-container {{ text-align: center; margin-top: 20px; margin-bottom: 30px; }}
-    .logo-text {{ font-family: 'Inter', sans-serif; font-weight: 800; font-size: 65px; letter-spacing: -3px; color: white; }}
+    /* 3. BRANDING (Menší mezery) */
+    .logo-container {{ text-align: center; margin-top: 10px; margin-bottom: 20px; }}
+    .logo-text {{ font-family: 'Inter', sans-serif; font-weight: 800; font-size: 60px; letter-spacing: -3px; color: white; line-height: 1.1; }}
     .j-green {{ color: #2ecc71 !important; }}
 
     /* 4. TLAČÍTKO */
@@ -88,13 +88,14 @@ st.markdown(f"""
         background-color: #2ecc71 !important;
         color: white !important;
         border: none !important;
-        height: 55px !important;
+        height: 52px !important;
         width: 100% !important;
         font-weight: 800 !important;
         text-transform: uppercase !important;
         border-radius: 8px !important;
         cursor: pointer !important;
         transition: all 0.2s ease-in-out;
+        margin-top: 5px;
     }}
     div.stButton > button:hover {{
         box-shadow: 0 0 15px rgba(46, 204, 113, 0.6) !important;
@@ -122,9 +123,9 @@ if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    for _ in range(8): 
+    for _ in range(4): 
         st.write("\n")
-    st.markdown('<div class="logo-container"><div class="logo-text"><span class="j-green">J</span>T | CAPITAL</div><div style="color:#555; font-size:10px; letter-spacing:3px;">TERMINAL v1.8</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="logo-container"><div class="logo-text"><span class="j-green">J</span>T | CAPITAL</div><div style="color:#666; font-size:11px; letter-spacing:4px; margin-top:5px;">TERMINAL 1</div></div>', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 0.7, 1])
     with col2:
@@ -144,7 +145,7 @@ st.markdown('<div class="logo-container"><div class="logo-text" style="font-size
 col_l, col_c, col_r = st.columns([0.1, 0.8, 0.1])
 
 with col_c:
-    # 1. KARTA S GRAFEM (Čistý černý průhledný box bez šedých podkladů)
+    # 1. KARTA S GRAFEM (Se zaoblenými rohy uvnitř i zvenčí)
     components.html("""
         <!DOCTYPE html>
         <html>
@@ -159,6 +160,11 @@ with col_c:
                 * {
                     box-sizing: border-box;
                 }
+                .tradingview-widget-container, 
+                .tradingview-widget-container iframe {
+                    border-radius: 12px !important;
+                    overflow: hidden !important;
+                }
             </style>
         </head>
         <body>
@@ -171,6 +177,7 @@ with col_c:
                 border: 1px solid rgba(255, 255, 255, 0.08);
                 box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
                 width: 100%;
+                overflow: hidden;
             ">
                 <div class="tradingview-widget-container">
                   <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
