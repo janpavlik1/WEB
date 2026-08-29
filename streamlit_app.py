@@ -11,10 +11,12 @@ st.set_page_config(
 # --- 2. TOTÁLNÍ DESIGN (CSS) ---
 st.markdown("""
     <style>
-    /* Nukleární odstranění pozadí Streamlitu pro viditelnost grafu */
+   /* Totální průhlednost všeho od Streamlitu */
     [data-testid="stAppViewContainer"], 
     [data-testid="stHeader"], 
     [data-testid="stMainBlockContainer"],
+    [data-testid="stVerticalBlock"],
+    [data-testid="stVerticalBlockBorderWrapper"],
     .stApp {
         background: transparent !important;
         background-color: transparent !important;
