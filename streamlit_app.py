@@ -8,22 +8,16 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. TOTÁLNÍ STYLING (Fix Safari & Unified Cards) ---
+# --- 2. TOTÁLNÍ STYLING ---
 BG_IMAGE = "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80&w=2070"
 
 st.markdown(f"""
     <style>
-    /* 1. GLOBÁLNÍ RESET PRO SAFARI (Zákaz červené a modré) */
+    /* 1. GLOBÁLNÍ RESET */
     * {{
         outline: none !important;
         box-shadow: none !important;
         -webkit-tap-highlight-color: transparent !important;
-    }}
-    
-    input:invalid, input:required, input:focus {{
-        box-shadow: none !important;
-        outline: none !important;
-        border: none !important;
     }}
 
     /* Pozadí a ztmavení */
@@ -36,27 +30,39 @@ st.markdown(f"""
         background-color: rgba(0, 0, 0, 0.9); z-index: -1;
     }}
 
-    /* Odstranění ploch Streamlitu */
+    /* Odstranění výchozích ploch Streamlitu */
     [data-testid="stMainBlockContainer"], [data-testid="stVerticalBlock"], 
     [data-testid="stVerticalBlockBorderWrapper"], .stApp {{
         background-color: transparent !important;
     }}
     
-    /* 2. STYL PRO PŘIHLAŠOVACÍ POLE (Bez rámečků) */
-    div[data-baseweb="input"] {{
+    /* 2. OPRAVA PŘIHLAŠOVACÍCH POLÍ (Odstranění červených a modrých rámečků) */
+    div[data-baseweb="input"],
+    div[data-baseweb="base-input"],
+    div[data-baseweb="input"] > div {{
         border: 1px solid #333 !important;
         background-color: rgba(10, 10, 10, 0.95) !important;
         border-radius: 6px !important;
+        box-shadow: none !important;
+        outline: none !important;
     }}
-    div[data-baseweb="input"]:focus-within {{
+
+    /* Zelený rámeček pouze při psaní/aktivaci */
+    div[data-baseweb="input"]:focus-within,
+    div[data-baseweb="base-input"]:focus-within {{
         border: 1px solid #2ecc71 !important;
+        box-shadow: 0 0 10px rgba(46, 204, 113, 0.2) !important;
     }}
     
-    input {{
+    input, input:invalid, input:required, input:focus {{
         text-align: center !important;
         color: white !important;
         font-size: 16px !important;
         height: 55px !important;
+        background: transparent !important;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
         -webkit-appearance: none !important;
     }}
 
@@ -75,9 +81,10 @@ st.markdown(f"""
         font-weight: 800 !important;
         text-transform: uppercase !important;
         border-radius: 6px !important;
+        cursor: pointer !important;
     }}
 
-    /* 5. UNIFIED TERMINAL CARDS (Sjednocené černé podsvícení) */
+    /* 5. UNIFIED TERMINAL CARDS */
     .terminal-card {{
         background-color: rgba(10, 10, 10, 0.95) !important;
         padding: 30px;
@@ -97,8 +104,9 @@ if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    for _ in range(8): st.write("\n")
-    st.markdown('<div class="logo-container"><div class="logo-text"><span class="j-green">J</span>T | CAPITAL</div><div style="color:#333; font-size:10px; letter-spacing:3px;">TERMINAL v1.8</div></div>', unsafe_allow_html=True)
+    for _ in range(8): 
+        st.write("\n")
+    st.markdown('<div class="logo-container"><div class="logo-text"><span class="j-green">J</span>T | CAPITAL</div><div style="color:#444; font-size:10px; letter-spacing:3px;">TERMINAL v1.8</div></div>', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 0.7, 1])
     with col2:
@@ -113,28 +121,43 @@ if not st.session_state.authenticated:
     st.stop()
 
 # --- 4. VNITŘEK TERMINÁLU ---
-
 st.markdown('<div class="logo-container"><div class="logo-text" style="font-size:45px;"><span class="j-green">J</span>T | CAPITAL</div></div>', unsafe_allow_html=True)
 
 col_l, col_c, col_r = st.columns([0.1, 0.8, 0.1])
 
 with col_c:
-    # 1. KARTA S GRAFEM (Nyní v černém boxu)
-    st.markdown('<div class="terminal-card">', unsafe_allow_html=True)
+    # 1. KARTA S GRAFEM (Stylovaný černý box přímo uvnitř HTML komponenty)
     components.html("""
-        <div class="tradingview-widget-container">
-          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
-          {
-          "symbols": [ ["FX_IDC:XAUUSD|12M"] ],
-          "chartOnly": false, "width": "100%", "height": "350", "locale": "cs", "colorTheme": "dark",
-          "gridLineColor": "rgba(42, 46, 57, 0)", "fontColor": "#787b86", "isTransparent": true,
-          "showFloatingTooltip": true, "showVolume": false,
-          "lineColor": "#2ecc71", "topColor": "rgba(46, 204, 113, 0.15)", "bottomColor": "rgba(46, 204, 113, 0)"
-        }
-          </script>
+        <div style="
+            background-color: rgba(10, 10, 10, 0.95);
+            padding: 20px 25px;
+            border-radius: 15px;
+            border: 1px solid #222;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+        ">
+            <div class="tradingview-widget-container">
+              <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
+              {
+                "symbols": [ ["FX_IDC:XAUUSD|12M"] ],
+                "chartOnly": false, 
+                "width": "100%", 
+                "height": "350", 
+                "locale": "cs", 
+                "colorTheme": "dark",
+                "gridLineColor": "rgba(42, 46, 57, 0)", 
+                "fontColor": "#787b86", 
+                "isTransparent": true,
+                "showFloatingTooltip": true, 
+                "showVolume": false,
+                "lineColor": "#2ecc71", 
+                "topColor": "rgba(46, 204, 113, 0.15)", 
+                "bottomColor": "rgba(46, 204, 113, 0)"
+              }
+              </script>
+            </div>
         </div>
-    """, height=360)
-    st.markdown('</div>', unsafe_allow_html=True)
+    """, height=410)
 
     # 2. KARTA SE SENTIMENTEM
     st.markdown("""
