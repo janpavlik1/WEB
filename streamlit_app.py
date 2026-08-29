@@ -145,7 +145,7 @@ st.markdown('<div class="logo-container"><div class="logo-text" style="font-size
 col_l, col_c, col_r = st.columns([0.1, 0.8, 0.1])
 
 with col_c:
-    # 1. KARTA S GRAFEM (1:1 stylovaná stejně jako spodní sentiment karta)
+    # 1. KARTA S GRAFEM (Pouze jediný zaoblený rámeček, identický se spodní kartou)
     components.html("""
         <!DOCTYPE html>
         <html>
@@ -156,34 +156,31 @@ with col_c:
                     padding: 0;
                     background: transparent !important;
                     overflow: hidden;
-                    font-family: sans-serif;
                 }
                 * {
                     box-sizing: border-box;
                 }
 
-                /* Identický styl jako .terminal-card */
+                /* Jediná karta - identická s .terminal-card */
                 .terminal-card {
                     background-color: rgba(10, 10, 10, 0.6) !important;
                     backdrop-filter: blur(12px) !important;
                     -webkit-backdrop-filter: blur(12px) !important;
-                    padding: 25px 30px;
-                    border-radius: 15px;
-                    border: 1px solid rgba(255, 255, 255, 0.08);
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-                    width: calc(100% - 10px);
-                    margin: 5px auto;
-                    overflow: hidden;
-                    transform: translateZ(0);
+                    padding: 20px 25px;
+                    border-radius: 15px !important;
+                    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+                    width: 100%;
+                    overflow: hidden !important;
                 }
 
-                /* Zaoblení samotného TradingView grafu uvnitř karty */
+                /* Odstranění jakéhokoliv vnitřního rámečku či druhého pozadí */
                 .tradingview-widget-container,
                 .tradingview-widget-container > div,
                 .tradingview-widget-container iframe {
-                    border-radius: 10px !important;
-                    overflow: hidden !important;
-                    transform: translateZ(0) !important;
+                    background: transparent !important;
+                    border: none !important;
+                    box-shadow: none !important;
                 }
             </style>
         </head>
@@ -212,7 +209,7 @@ with col_c:
             </div>
         </body>
         </html>
-    """, height=425)
+    """, height=395)
 
     # 2. KARTA SE SENTIMENTEM
     st.markdown("""
