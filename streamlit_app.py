@@ -1,5 +1,8 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import requests
+import xml.etree.ElementTree as ET
+from datetime import datetime
 
 # --- 1. KONFIGURACE ---
 st.set_page_config(
@@ -78,9 +81,10 @@ st.markdown(f"""
         -webkit-appearance: none !important;
     }}
 
-    /* 3. BRANDING (Menší mezery) */
+    /* 3. BRANDING */
     .logo-container {{ text-align: center; margin-top: 10px; margin-bottom: 20px; }}
     .logo-text {{ font-family: 'Inter', sans-serif; font-weight: 800; font-size: 60px; letter-spacing: -3px; color: white; line-height: 1.1; }}
+    .logo-sub {{ color: #777; font-size: 11px; letter-spacing: 4px; margin-top: 6px; text-transform: uppercase; font-weight: 600; }}
     .j-green {{ color: #2ecc71 !important; }}
 
     /* 4. TLAČÍTKO */
@@ -118,110 +122,33 @@ st.markdown(f"""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. LOGIN LOGIKA ---
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
 
-if not st.session_state.authenticated:
-    for _ in range(4): 
-        st.write("\n")
-    st.markdown('<div class="logo-container"><div class="logo-text"><span class="j-green">J</span>T | CAPITAL</div><div style="color:#666; font-size:11px; letter-spacing:4px; margin-top:5px;">TERMINAL 1</div></div>', unsafe_allow_html=True)
+# --- 3. REÁLNÝ ENGINE PRO ANALÝZU SENTIMENTU XAUUSD ---
+@st.cache_data(ttl=300)
+def fetch_live_gold_sentiment():
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
     
-    col1, col2, col3 = st.columns([1, 0.7, 1])
-    with col2:
-        num = st.text_input("NUM", placeholder="PŘIHLAŠOVACÍ ČÍSLO", label_visibility="collapsed")
-        pwd = st.text_input("PWD", type="password", placeholder="HESLO", label_visibility="collapsed")
-        if st.button("PŘIHLÁSIT SE", use_container_width=True):
-            if num == "1234" and pwd == "1234":
-                st.session_state.authenticated = True
-                st.rerun()
-            else:
-                st.error("PŘÍSTUP ZAMÍTNUT")
-    st.stop()
+    # 1. Získání reálných tržních dat (Zlato a Dolarový index)
+    gold_price, gold_pct, dxy_pct = 0.0, 0.0, 0.0
+    try:
+        # Data pro zlato (GC=F)
+        res_g = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=1d&range=5d", headers=headers, timeout=5).json()
+        meta_g = res_g['chart']['result'][0]['meta']
+        gold_price = round(meta_g.get('regularMarketPrice', 0.0), 2)
+        prev_close_g = meta_g.get('chartPreviousClose', gold_price)
+        gold_pct = round(((gold_price - prev_close_g) / prev_close_g) * 100, 2) if prev_close_g else 0.0
 
-# --- 4. VNITŘEK TERMINÁLU ---
-st.markdown('<div class="logo-container"><div class="logo-text" style="font-size:45px;"><span class="j-green">J</span>T | CAPITAL</div></div>', unsafe_allow_html=True)
+        # Data pro DXY (USD Index)
+        res_d = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/DX-Y.NYB?interval=1d&range=5d", headers=headers, timeout=5).json()
+        meta_d = res_d['chart']['result'][0]['meta']
+        dxy_price = meta_d.get('regularMarketPrice', 0.0)
+        prev_close_d = meta_d.get('chartPreviousClose', dxy_price)
+        dxy_pct = round(((dxy_price - prev_close_d) / prev_close_d) * 100, 2) if prev_close_d else 0.0
+    except Exception:
+        pass
 
-col_l, col_c, col_r = st.columns([0.1, 0.8, 0.1])
-
-with col_c:
-    # 1. KARTA S GRAFEM (Pouze jediný zaoblený rámeček, identický se spodní kartou)
-    components.html("""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <style>
-                html, body {
-                    margin: 0;
-                    padding: 0;
-                    background: transparent !important;
-                    overflow: hidden;
-                }
-                * {
-                    box-sizing: border-box;
-                }
-
-                /* Jediná karta - identická s .terminal-card */
-                .terminal-card {
-                    background-color: rgba(10, 10, 10, 0.6) !important;
-                    backdrop-filter: blur(12px) !important;
-                    -webkit-backdrop-filter: blur(12px) !important;
-                    padding: 20px 25px;
-                    border-radius: 15px !important;
-                    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
-                    width: 100%;
-                    overflow: hidden !important;
-                }
-
-                /* Odstranění jakéhokoliv vnitřního rámečku či druhého pozadí */
-                .tradingview-widget-container,
-                .tradingview-widget-container > div,
-                .tradingview-widget-container iframe {
-                    background: transparent !important;
-                    border: none !important;
-                    box-shadow: none !important;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="terminal-card">
-                <div class="tradingview-widget-container">
-                  <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
-                  {
-                    "symbols": [ ["FX_IDC:XAUUSD|12M"] ],
-                    "chartOnly": false, 
-                    "width": "100%", 
-                    "height": "350", 
-                    "locale": "cs", 
-                    "colorTheme": "dark",
-                    "gridLineColor": "rgba(42, 46, 57, 0)", 
-                    "fontColor": "#787b86", 
-                    "isTransparent": true,
-                    "showFloatingTooltip": true, 
-                    "showVolume": false,
-                    "lineColor": "#2ecc71", 
-                    "topColor": "rgba(46, 204, 113, 0.15)", 
-                    "bottomColor": "rgba(46, 204, 113, 0)"
-                  }
-                  </script>
-                </div>
-            </div>
-        </body>
-        </html>
-    """, height=395)
-
-    # 2. KARTA SE SENTIMENTEM
-    st.markdown("""
-    <div class="terminal-card">
-        <div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 10px;">AI Analysis System</div>
-        <div style="color: #2ecc71; font-weight: 900; font-size: 28px; letter-spacing: 2px;">BULLISH SENTIMENT</div>
-        <p style="color: #bbb; margin-top: 15px; font-size: 16px; line-height: 1.6;">
-            Zlato testuje denní rezistenci. Fundamentální data naznačují oslabování dolaru (DXY). 
-            Sledujte možnost bullish breakoutu nad aktuální hladinu.
-        </p>
-        <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); margin-top: 20px; padding-top: 10px; color: #666; font-size: 10px;">
-            SOURCE: REAL-TIME REUTERS FEED | AI ENGINE v1.8
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    # 2. Získání nejnovějšího zprávového titulku (Google News RSS pro zlato)
+    news_title = "Sledování klíčových hladin podpory a odporu na trhu se zlatem."
+    news_source = "GLOBAL MARKET FEED"
+    try:
+        feed_url = "https://news.google.com/rss/search?q=gold+price+XAUUSD+when:2d
