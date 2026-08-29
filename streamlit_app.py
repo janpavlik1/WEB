@@ -123,36 +123,42 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 
-# --- 3. PŘEKLADAČ DO ČEŠTINY ---
-def translate_to_czech(text):
+# --- 3. PŘEKLADOVÝ ENGINE (MYMEMORY TRANSLATION API) ---
+def translate_with_mymemory(text):
     if not text:
         return text
+    
+    # 1. Primární volání: MyMemory Translation API
     try:
-        url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=cs&dt=t&q={requests.utils.quote(text)}"
-        res = requests.get(url, timeout=3)
-        if res.status_code == 200:
-            data = res.json()
-            translated = "".join([part[0] for part in data[0] if part[0]])
-            return translated
+        url = "https://api.mymemory.translated.net/get"
+        params = {"q": text, "langpair": "en|cs"}
+        res = requests.get(url, params=params, timeout=4).json()
+        if res.get("responseStatus") == 200 and res.get("responseData"):
+            translated = res["responseData"].get("translatedText")
+            if translated and not translated.startswith("MYMEMORY WARNING"):
+                return translated
     except Exception:
         pass
-    return text
+
+    # 2. Záložní rychlý překlad (Fallback)
+    try:
+        url_fallback = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=cs&dt=t&q={requests.utils.quote(text)}"
+        res_fb = requests.get(url_fallback, timeout=3).json()
+        return "".join([part[0] for part in res_fb[0] if part[0]])
+    except Exception:
+        return text
 
 
-# --- 4. ANALÝZA ZE ZVOLENÝCH 5 WEBOVÝCH ZDROJŮ ---
+# --- 4. ANALÝZA ZE ZDROJŮ (FINNHUB + 5 WEBOVÝCH PORTÁLŮ) ---
 @st.cache_data(ttl=300)
 def fetch_target_sources_sentiment():
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
 
-    sources = [
-        {"name": "InvestingLive", "url": "https://www.forexlive.com/feed/news/"},
-        {"name": "Investing.com", "url": "https://www.investing.com/rss/news_14.rss"},
-        {"name": "ForexFactory", "url": "https://www.forexfactory.com/news/rss"},
-        {"name": "TradingEconomics", "url": "https://tradingeconomics.com/rss/news.aspx"},
-        {"name": "FinancialJuice", "url": "https://www.financialjuice.com/feed.ashx?xy=rss"}
-    ]
+    all_headlines = []
+    bull_count = 0
+    bear_count = 0
 
     bullish_keywords = [
         "gain", "rise", "jump", "rally", "surge", "high", "record", "bull", "buying", 
@@ -163,9 +169,28 @@ def fetch_target_sources_sentiment():
         "resistance", "pressure", "hike", "hawkish", "strong dollar", "yields rise", "retreats"
     ]
 
-    all_headlines = []
-    bull_count = 0
-    bear_count = 0
+    # A) Získání zpráv z Finnhub API (Market & Forex Feed)
+    try:
+        finnhub_url = "https://finnhub.io/api/v1/news?category=forex&token=sandbox_c8j8tgaad3i9g3a5o820"
+        finnhub_res = requests.get(finnhub_url, timeout=3).json()
+        if isinstance(finnhub_res, list):
+            for item in finnhub_res[:10]:
+                headline = item.get("headline", "")
+                if headline:
+                    low = headline.lower()
+                    if any(w in low for w in ["gold", "xau", "dollar", "fed", "rate", "yield"]):
+                        all_headlines.append({"source": "Finnhub", "title": headline.strip()})
+    except Exception:
+        pass
+
+    # B) Získání zpráv z 5 klíčových portálů (Investing, ForexFactory, FinancialJuice, ...)
+    sources = [
+        {"name": "InvestingLive", "url": "https://www.forexlive.com/feed/news/"},
+        {"name": "Investing.com", "url": "https://www.investing.com/rss/news_14.rss"},
+        {"name": "ForexFactory", "url": "https://www.forexfactory.com/news/rss"},
+        {"name": "TradingEconomics", "url": "https://tradingeconomics.com/rss/news.aspx"},
+        {"name": "FinancialJuice", "url": "https://www.financialjuice.com/feed.ashx?xy=rss"}
+    ]
 
     for src in sources:
         try:
@@ -187,20 +212,21 @@ def fetch_target_sources_sentiment():
         except Exception:
             continue
 
+    # Výchozí titulek
     if not all_headlines:
         raw_headline = "Klíčové fundamenty trhu testují aktuální cenové hladiny."
-        latest_source = "INVESTING.COM / FOREXFACTORY"
+        latest_source = "FINNHUB / INVESTING.COM"
     else:
         raw_headline = all_headlines[0]["title"]
         latest_source = all_headlines[0]["source"]
 
-    # Automatický překlad do češtiny
-    cz_headline = translate_to_czech(raw_headline)
+    # Překlad přes MyMemory API
+    cz_headline = translate_with_mymemory(raw_headline)
 
     if bull_count > bear_count:
         sentiment_label = "BULLISH SENTIMENT"
         sentiment_color = "#2ecc71"
-        note = "Agregovaná fundamentální data z vybraných portálů indikují převahu nákupního tlaku a příznivé podmínky pro růst zlata."
+        note = "Agregovaná fundamentální data indikují převahu nákupního tlaku a příznivé podmínky pro růst zlata."
     elif bear_count > bull_count:
         sentiment_label = "BEARISH SENTIMENT"
         sentiment_color = "#e74c3c"
@@ -259,7 +285,7 @@ st.markdown("""
 col_l, col_c, col_r = st.columns([0.08, 0.84, 0.08])
 
 with col_c:
-    # --- A) KARTA: SVĚTOVÝ ČAS (3 MĚSTA) A ŽIVÉ SEANCE (Zelená barva) ---
+    # --- A) KARTA: SVĚTOVÝ ČAS A ŽIVÉ SEANCE (Běží každou sekundu) ---
     components.html("""
         <!DOCTYPE html>
         <html>
@@ -279,7 +305,6 @@ with col_c:
                     color: white;
                 }
 
-                /* Horní řádek s hodinami (3 města) */
                 .clocks-grid {
                     display: grid;
                     grid-template-columns: repeat(3, 1fr);
@@ -292,7 +317,6 @@ with col_c:
                 .clock-item .city { font-size: 10px; color: #777; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 2px; }
                 .clock-item .time { font-size: 17px; font-weight: 700; color: #eee; font-variant-numeric: tabular-nums; }
 
-                /* Grid seancí (3 seance) */
                 .sessions-grid {
                     display: grid;
                     grid-template-columns: repeat(3, 1fr);
@@ -344,7 +368,6 @@ with col_c:
         </head>
         <body>
             <div class="terminal-card">
-                <!-- 1. SVĚTOVÉ HODINY (PRAHA, LONDÝN, NEW YORK) -->
                 <div class="clocks-grid">
                     <div class="clock-item">
                         <div class="city">Praha (Lokální)</div>
@@ -360,9 +383,7 @@ with col_c:
                     </div>
                 </div>
 
-                <!-- 2. SEANCE & ŽIVÉ ODPOČTY -->
                 <div class="sessions-grid">
-                    <!-- LONDÝN -->
                     <div class="session-box" id="box-london">
                         <div class="session-header">
                             <span class="session-name">LONDÝN</span>
@@ -372,7 +393,6 @@ with col_c:
                         <div class="session-countdown" id="count-london">Načítání...</div>
                     </div>
 
-                    <!-- NEW YORK -->
                     <div class="session-box" id="box-ny">
                         <div class="session-header">
                             <span class="session-name">NEW YORK</span>
@@ -382,7 +402,6 @@ with col_c:
                         <div class="session-countdown" id="count-ny">Načítání...</div>
                     </div>
 
-                    <!-- WALL STREET -->
                     <div class="session-box" id="box-ws">
                         <div class="session-header">
                             <span class="session-name">WALL STREET</span>
@@ -421,7 +440,6 @@ with col_c:
                     let dayOfWeek = now.getDay();
                     let currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-                    // Víkend: Sobota celá, Neděle do 23:00, Pátek po 23:00
                     let isWeekend = (dayOfWeek === 6) || (dayOfWeek === 0 && currentMinutes < 23 * 60) || (dayOfWeek === 5 && currentMinutes >= 23 * 60);
 
                     sessions.forEach(s => {
@@ -541,7 +559,7 @@ with col_c:
         </html>
     """, height=395)
 
-    # --- C) KARTA: ŽIVÝ FUNDAMENTÁLNÍ SENTIMENT (Český překlad) ---
+    # --- C) KARTA: ŽIVÝ FUNDAMENTÁLNÍ SENTIMENT (MyMemory + Finnhub) ---
     data = fetch_target_sources_sentiment()
     
     st.markdown(f"""
@@ -567,7 +585,7 @@ with col_c:
             </div>
         </div>
         <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 18px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px;">
-            ZDROJE: INVESTING.COM &bull; INVESTINGLIVE &bull; FINANCIALJUICE &bull; TRADINGECONOMICS &bull; FOREXFACTORY
+            ZDROJE: FINNHUB &bull; INVESTING.COM &bull; INVESTINGLIVE &bull; FINANCIALJUICE &bull; FOREXFACTORY &bull; TRADINGECONOMICS | PŘEKLAD: MYMEMORY API
         </div>
     </div>
     """, unsafe_allow_html=True)
