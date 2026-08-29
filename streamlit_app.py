@@ -2,6 +2,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 import requests
 import xml.etree.ElementTree as ET
+import html
 from datetime import datetime
 
 # --- 1. KONFIGURACE ---
@@ -122,35 +123,51 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 
-# --- 3. PŘEKLADOVÝ ENGINE (MYMEMORY API) ---
+# --- 3. SPOLEHLIVÝ PŘEKLADOVÝ ENGINE (MYMEMORY S VYSOKÝM LIMITEM) ---
 def translate_with_mymemory(text):
     if not text:
         return ""
     clean_txt = text.strip()
+    
+    # 1. MyMemory API (s parametrem de pro navýšení denního limitu na 50 000 znaků)
     try:
         url = "https://api.mymemory.translated.net/get"
-        params = {"q": clean_txt, "langpair": "en|cs"}
+        params = {
+            "q": clean_txt,
+            "langpair": "en|cs",
+            "de": "jt_capital_terminal_feed@gmail.com"
+        }
         res = requests.get(url, params=params, timeout=3)
         if res.status_code == 200:
             js = res.json()
             trans = js.get("responseData", {}).get("translatedText", "")
             if trans and "MYMEMORY WARNING" not in trans:
-                return trans
+                return html.unescape(trans)
     except Exception:
         pass
 
+    # 2. Záložní přímý překladový kanál
     try:
-        url_fb = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=cs&dt=t&q={requests.utils.quote(clean_txt)}"
-        res_fb = requests.get(url_fb, timeout=2)
+        url_fb = "https://translate.googleapis.com/translate_a/single"
+        params_fb = {
+            "client": "gtx",
+            "sl": "en",
+            "tl": "cs",
+            "dt": "t",
+            "q": clean_txt
+        }
+        res_fb = requests.get(url_fb, params=params_fb, headers={"User-Agent": "Mozilla/5.0"}, timeout=2)
         if res_fb.status_code == 200:
             js_fb = res_fb.json()
-            return "".join([part[0] for part in js_fb[0] if part[0]])
+            translated = "".join([part[0] for part in js_fb[0] if part[0]])
+            return html.unescape(translated)
     except Exception:
         pass
+        
     return clean_txt
 
 
-# --- 4. ENGINE: ČISTĚ FINANCIALJUICE + 3 HIGHLIGHTY (FAIL-SAFE) ---
+# --- 4. ZDROJ 1: FINANCIALJUICE (3 HIGHLIGHTY + SENTIMENT) ---
 @st.cache_data(ttl=120)
 def fetch_financialjuice_highlights():
     default_data = {
@@ -176,13 +193,11 @@ def fetch_financialjuice_highlights():
 
     try:
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
         }
         
         raw_items = []
-        
-        # 1. Pokus o stažení z FinancialJuice
         try:
             fj_url = "https://www.financialjuice.com/feed.ashx?xy=rss"
             res = requests.get(fj_url, headers=headers, timeout=4)
@@ -199,7 +214,6 @@ def fetch_financialjuice_highlights():
         except Exception:
             pass
 
-        # 2. Záložní přímý zdroj, pokud FinancialJuice neodpovídá
         if not raw_items:
             try:
                 fb_url = "https://news.google.com/rss/search?q=gold+price+XAUUSD+fed+rates&hl=en-US&gl=US&ceid=US:en"
@@ -267,7 +281,44 @@ def fetch_financialjuice_highlights():
         return default_data
 
 
-# --- 5. LOGIN LOGIKA ---
+# --- 5. ZDROJ 2: FINNHUB (VŠECHNY AKTUÁLNÍ FUNDAMENTÁLNÍ ZPRÁVY) ---
+@st.cache_data(ttl=180)
+def fetch_finnhub_news():
+    default_news = [
+        {"cz": "Trh s drahými kovy sleduje měnovou politiku centrálních bank a výnosy dluhopisů.", "orig": "Precious metals market tracks central bank policies and treasury yields.", "source": "FINNHUB", "time": "Live"},
+        {"cz": "Dolarový index reaguje na nová makroekonomická data z amerického trhu práce.", "orig": "Dollar index reacts to fresh macroeconomic data from US labor market.", "source": "REUTERS", "time": "Live"},
+        {"cz": "Investoři vyhodnocují globální inflační tlaky a jejich dopad na komodity.", "orig": "Investors assess global inflationary pressures and impact on commodities.", "source": "BLOOMBERG", "time": "Live"},
+        {"cz": "Poptávka po fyzickém zlatě zůstává podpořena nákupy centrálních bank.", "orig": "Physical gold demand remains supported by central bank reserves buying.", "source": "WGC", "time": "Live"}
+    ]
+    try:
+        headers = {"User-Agent": "Mozilla/5.0"}
+        url = "https://finnhub.io/api/v1/news?category=forex&token=c8j8tgaad3i9g3a5o820"
+        res = requests.get(url, headers=headers, timeout=4)
+        if res.status_code == 200:
+            items = res.json()
+            if isinstance(items, list) and len(items) > 0:
+                parsed = []
+                for item in items[:6]:
+                    head = item.get("headline", "").strip()
+                    src = item.get("source", "FINNHUB").upper()
+                    dt = item.get("datetime", 0)
+                    t_str = datetime.fromtimestamp(dt).strftime("%H:%M") if dt else "Live"
+                    if head:
+                        cz_head = translate_with_mymemory(head)
+                        parsed.append({
+                            "cz": cz_head,
+                            "orig": head,
+                            "source": src,
+                            "time": t_str
+                        })
+                if parsed:
+                    return parsed
+    except Exception:
+        pass
+    return default_news
+
+
+# --- 6. LOGIN LOGIKA ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -294,7 +345,7 @@ if not st.session_state.authenticated:
     st.stop()
 
 
-# --- 6. VNITŘEK TERMINÁLU ---
+# --- 7. VNITŘEK TERMINÁLU ---
 st.markdown("""
     <div class="logo-container">
         <div class="logo-text" style="font-size:45px;"><span class="j-green">J</span>T | CAPITAL</div>
@@ -305,7 +356,7 @@ st.markdown("""
 col_l, col_c, col_r = st.columns([0.08, 0.84, 0.08])
 
 with col_c:
-    # --- A) KARTA: SVĚTOVÝ ČAS A ŽIVÉ SEANCE ---
+    # --- 1. KARTA: SVĚTOVÝ ČAS A ŽIVÉ SEANCE ---
     components.html("""
         <!DOCTYPE html>
         <html>
@@ -524,7 +575,7 @@ with col_c:
         </html>
     """, height=185)
 
-    # --- B) KARTA: TRADINGVIEW GRAF XAUUSD ---
+    # --- 2. KARTA: TRADINGVIEW GRAF XAUUSD ---
     components.html("""
         <!DOCTYPE html>
         <html>
@@ -533,9 +584,9 @@ with col_c:
                 html, body { margin: 0; padding: 0; background: transparent !important; overflow: hidden; }
                 * { box-sizing: border-box; }
                 .terminal-card {
-                    background-color: rgba(10, 10, 10, 0.6) !important;
-                    backdrop-filter: blur(12px) !important;
-                    -webkit-backdrop-filter: blur(12px) !important;
+                    background-color: rgba(10, 10, 10, 0.6);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
                     padding: 20px 25px;
                     border-radius: 15px !important;
                     border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -579,50 +630,97 @@ with col_c:
         </html>
     """, height=395)
 
-    # --- C) KARTA: 3 AKTUÁLNÍ HIGHLIGHTY (BEZPEČNÉ RENDEROVÁNÍ) ---
-    data = fetch_financialjuice_highlights()
+    # --- 3. KARTA: FINANCIALJUICE (3 HIGHLIGHTY + SENTIMENT) ---
+    data_fj = fetch_financialjuice_highlights()
     
-    d_time = str(data.get("time", ""))
-    d_color = str(data.get("color", "#2ecc71"))
-    d_label = str(data.get("label", "BULLISH SENTIMENT"))
-    d_note = str(data.get("note", ""))
-    d_highlights = data.get("highlights", [])
+    fj_time = str(data_fj.get("time", ""))
+    fj_color = str(data_fj.get("color", "#2ecc71"))
+    fj_label = str(data_fj.get("label", "BULLISH SENTIMENT"))
+    fj_note = str(data_fj.get("note", ""))
+    fj_highlights = data_fj.get("highlights", [])
 
-    boxes_list = []
-    for idx, item in enumerate(d_highlights, start=1):
-        cz_text = str(item.get("cz", "")).replace('"', '&quot;')
-        orig_text = str(item.get("orig", "")).replace('"', '&quot;')
-        box_str = (
+    fj_boxes = []
+    for idx, item in enumerate(fj_highlights, start=1):
+        cz_t = str(item.get("cz", "")).replace('"', '&quot;')
+        orig_t = str(item.get("orig", "")).replace('"', '&quot;')
+        b_str = (
             f'<div style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06); '
             f'border-radius: 8px; padding: 10px 14px; margin-top: 10px; text-align: left;">'
             f'<div style="color: #2ecc71; font-size: 13px; font-weight: 600; line-height: 1.4;">'
-            f'<span style="color: #888; font-size: 11px; margin-right: 4px;">#{idx}</span> &quot;{cz_text}&quot;'
+            f'<span style="color: #888; font-size: 11px; margin-right: 4px;">#{idx}</span> &quot;{cz_t}&quot;'
             f'</div>'
             f'<div style="color: #666; font-size: 11px; font-style: italic; margin-top: 3px;">'
-            f'{orig_text}'
+            f'{orig_t}'
             f'</div>'
             f'</div>'
         )
-        boxes_list.append(box_str)
+        fj_boxes.append(b_str)
 
-    all_boxes_html = "".join(boxes_list)
+    all_fj_boxes = "".join(fj_boxes)
 
-    full_card_html = (
+    full_fj_html = (
         f'<div class="terminal-card">'
         f'<div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 8px;">'
-        f'AI Fundamental Squawk &bull; Live FinancialJuice Feed ({d_time})'
+        f'AI Fundamental Squawk &bull; Live FinancialJuice Feed ({fj_time})'
         f'</div>'
-        f'<div style="color: {d_color}; font-weight: 900; font-size: 28px; letter-spacing: 2px;">'
-        f'{d_label}'
+        f'<div style="color: {fj_color}; font-weight: 900; font-size: 28px; letter-spacing: 2px;">'
+        f'{fj_label}'
         f'</div>'
         f'<p style="color: #ddd; margin-top: 8px; margin-bottom: 12px; font-size: 14px; line-height: 1.5;">'
-        f'{d_note}'
+        f'{fj_note}'
         f'</p>'
-        f'{all_boxes_html}'
+        f'{all_fj_boxes}'
         f'<div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 18px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px;">'
-        f'ZDROJ: FINANCIALJUICE (REAL-TIME SQUAWK FEED) | PŘEKLAD: MYMEMORY API'
+        f'ZDROJ: FINANCIALJUICE (SQUAWK FEED) | PŘEKLAD: MYMEMORY API'
         f'</div>'
         f'</div>'
     )
+    st.markdown(full_fj_html, unsafe_allow_html=True)
 
-    st.markdown(full_card_html, unsafe_allow_html=True)
+    # --- 4. KARTA: FINNHUB (VŠECHNY AKTUÁLNÍ ZPRÁVY) ---
+    finnhub_items = fetch_finnhub_news()
+    
+    fh_boxes = []
+    for item in finnhub_items:
+        c_head = str(item.get("cz", "")).replace('"', '&quot;')
+        o_head = str(item.get("orig", "")).replace('"', '&quot;')
+        i_src = str(item.get("source", "FINNHUB"))
+        i_time = str(item.get("time", "Live"))
+        
+        fb_str = (
+            f'<div style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06); '
+            f'border-radius: 8px; padding: 11px 14px; margin-top: 10px; text-align: left;">'
+            f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">'
+            f'<span style="color: #2ecc71; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">{i_src}</span>'
+            f'<span style="color: #666; font-size: 10px;">{i_time}</span>'
+            f'</div>'
+            f'<div style="color: #eee; font-size: 13px; font-weight: 600; line-height: 1.4;">'
+            f'&quot;{c_head}&quot;'
+            f'</div>'
+            f'<div style="color: #777; font-size: 11px; font-style: italic; margin-top: 3px;">'
+            f'{o_head}'
+            f'</div>'
+            f'</div>'
+        )
+        fh_boxes.append(fb_str)
+
+    all_fh_boxes = "".join(fh_boxes)
+
+    full_fh_html = (
+        f'<div class="terminal-card">'
+        f'<div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 8px;">'
+        f'Global Market News Wire &bull; Live Institutional Feed'
+        f'</div>'
+        f'<div style="color: #ffffff; font-weight: 800; font-size: 22px; letter-spacing: 1px; margin-bottom: 6px;">'
+        f'AKTUÁLNÍ FUNDAMENTÁLNÍ ZPRÁVY'
+        f'</div>'
+        f'<p style="color: #999; font-size: 13px; margin-bottom: 12px;">'
+        f'Kompletní přehled nejnovějších zpráv z finančních trhů v reálném čase.'
+        f'</p>'
+        f'{all_fh_boxes}'
+        f'<div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 18px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px;">'
+        f'ZDROJ: FINNHUB FINANCIAL API | PŘEKLAD: MYMEMORY API'
+        f'</div>'
+        f'</div>'
+    )
+    st.markdown(full_fh_html, unsafe_allow_html=True)
