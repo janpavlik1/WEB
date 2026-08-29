@@ -8,52 +8,61 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. TOTÁLNÍ DESIGN (CSS) ---
-st.markdown("""
+# --- 2. KOMPLEXNÍ DESIGN (CSS s obrázkem na pozadí) ---
+# Odkaz na obrázek (lze kdykoliv vyměnit za jinou URL)
+BG_IMAGE_URL = "https://images.unsplash.com/photo-1611974717482-75d31276a603?q=80&w=2070&auto=format&fit=crop"
+
+st.markdown(f"""
     <style>
-    /* Odstranění pozadí Streamlitu */
-    [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stMainBlockContainer"], 
-    [data-testid="stVerticalBlock"], [data-testid="stVerticalBlockBorderWrapper"], .stApp {
+    /* Nastavení obrázku na pozadí celé aplikace */
+    [data-testid="stAppViewContainer"] {{
+        background-image: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url("{BG_IMAGE_URL}");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }}
+
+    /* Odstranění všech výchozích barev Streamlitu */
+    [data-testid="stHeader"], [data-testid="stMainBlockContainer"], 
+    [data-testid="stVerticalBlock"], [data-testid="stVerticalBlockBorderWrapper"], .stApp {{
         background: transparent !important;
         background-color: transparent !important;
-    }
-    [data-testid="stSidebar"] { display: none !important; }
-    [data-testid="InputInstructions"] { display: none !important; }
+    }}
     
-    /* DEFINITIVNÍ ODSTRANĚNÍ ČERVENÉHO/MODRÉHO RÁMEČKU */
-    input {
+    [data-testid="stSidebar"] {{ display: none !important; }}
+    [data-testid="InputInstructions"] {{ display: none !important; }}
+    
+    /* DEFINITIVNÍ ODSTRANĚNÍ BAREVNÝCH RÁMEČKŮ */
+    input {{
         outline: none !important;
         box-shadow: none !important;
         -webkit-box-shadow: none !important;
-    }
-    .stTextInput>div>div {
-        border: 1px solid #333 !important;
+        border: none !important;
+    }}
+    .stTextInput>div>div {{
+        border: 1px solid #444 !important;
         box-shadow: none !important;
-    }
-    .stTextInput>div>div:focus-within {
+        background-color: rgba(15, 15, 15, 0.95) !important;
+    }}
+    .stTextInput>div>div:focus-within {{
         border: 1px solid #2ecc71 !important;
         box-shadow: none !important;
-    }
+    }}
 
-    body { background-color: #000000 !important; }
-    #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
-    
-    .logo-container { text-align: center; margin-top: 20px; margin-bottom: 30px; }
-    .logo-text { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 60px; letter-spacing: -2px; color: white; }
-    .j-green { color: #2ecc71 !important; }
+    .logo-container {{ text-align: center; margin-top: 20px; margin-bottom: 30px; }}
+    .logo-text {{ font-family: 'Inter', sans-serif; font-weight: 800; font-size: 65px; letter-spacing: -3px; color: white; }}
+    .j-green {{ color: #2ecc71 !important; }}
 
     /* Login Inputs */
-    .stTextInput>div>div>input {
-        background-color: rgba(25, 25, 25, 0.9) !important;
+    .stTextInput>div>div>input {{
         color: white !important;
         text-align: center !important;
         height: 55px !important;
-        border-radius: 6px !important;
         font-size: 16px !important;
-    }
+    }}
     
     /* Login Button */
-    div.stButton > button {
+    div.stButton > button {{
         background-color: #2ecc71 !important;
         color: white !important;
         border: none !important;
@@ -63,55 +72,25 @@ st.markdown("""
         font-weight: 800 !important;
         text-transform: uppercase !important;
         transition: 0.3s;
-    }
-    div.stButton > button:hover {
+    }}
+    div.stButton > button:hover {{
         background-color: #27ae60 !important;
         transform: scale(1.01);
-    }
+    }}
 
     /* Sentiment Box */
-    .sentiment-card {
-        background-color: rgba(20, 20, 20, 0.9);
+    .sentiment-card {{
+        background-color: rgba(15, 15, 15, 0.95);
         padding: 30px;
         border-radius: 15px;
         border: 1px solid #333;
         text-align: center;
         margin-top: 20px;
-    }
-    .sentiment-bullish { color: #2ecc71; font-weight: 900; font-size: 28px; letter-spacing: 2px; }
+    }}
+    .sentiment-bullish {{ color: #2ecc71; font-weight: 900; font-size: 28px; letter-spacing: 2px; }}
 
-    footer, header, #MainMenu { visibility: hidden; }
+    footer, header, #MainMenu {{ visibility: hidden; }}
     </style>
-
-    <div id="canvas-container"><canvas id="chartCanvas"></canvas></div>
-    <script>
-    const canvas = document.getElementById('chartCanvas');
-    const ctx = canvas.getContext('2d');
-    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-    window.addEventListener('resize', resize);
-    resize();
-    const candles = [];
-    for (let i = 0; i < 45; i++) {
-        candles.push({
-            x: Math.random() * canvas.width, y: Math.random() * canvas.height,
-            w: 12, h: Math.random() * 80 + 20,
-            type: Math.random() > 0.5 ? '#2ecc71' : '#e74c3c',
-            speed: Math.random() * 0.4 + 0.15
-        });
-    }
-    function animate() {
-        ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.globalAlpha = 0.2; 
-        candles.forEach(c => {
-            c.x -= c.speed;
-            if (c.x < -20) { c.x = canvas.width + 20; c.y = Math.random() * canvas.height; }
-            ctx.fillStyle = c.type; ctx.fillRect(c.x, c.y, c.w, c.h);
-            ctx.fillRect(c.x + c.w/2 - 1, c.y - 15, 2, c.h + 30);
-        });
-        requestAnimationFrame(animate);
-    }
-    animate();
-    </script>
     """, unsafe_allow_html=True)
 
 # --- 3. LOGIN LOGIKA ---
@@ -119,7 +98,7 @@ if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    for _ in range(7): st.write("\n")
+    for _ in range(8): st.write("\n")
     st.markdown('<div class="logo-container"><div class="logo-text"><span class="j-green">J</span>T | CAPITAL</div></div>', unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 0.7, 1])
     with col2:
