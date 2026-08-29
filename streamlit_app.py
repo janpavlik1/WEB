@@ -8,7 +8,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. KOMPLEXNÍ STYLING (Login, Pozadí, Custom Slider) ---
+# --- 2. KOMPLEXNÍ STYLING (Login, Pozadí, Zelené Tlačítko) ---
 st.markdown("""
     <style>
     /* Absolutní černé pozadí */
@@ -23,11 +23,11 @@ st.markdown("""
     }
 
     /* Logo JT | CAPITAL */
-    .logo-container { text-align: center; margin-top: 100px; margin-bottom: 30px; position: relative; z-index: 1; }
+    .logo-container { text-align: center; margin-top: 120px; margin-bottom: 30px; position: relative; z-index: 1; }
     .logo-text { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 75px; letter-spacing: -4px; color: white; }
     .j-green { color: #2ecc71; }
 
-    /* Input pole - sjednocený styl */
+    /* Input pole */
     .stTextInput input {
         background-color: rgba(15, 15, 15, 0.9) !important;
         color: white !important;
@@ -40,54 +40,26 @@ st.markdown("""
     }
     .stTextInput input:focus { border-color: #2ecc71 !important; }
 
-    /* --- CUSTOM SLIDE TO UNLOCK (Hacking Streamlit Slider) --- */
-    /* Schování labelu a čísel slideru */
-    div[data-testid="stSlider"] label, div[data-testid="stWidgetLabel"] { display: none; }
-    div[data-testid="stSliderTickBar"] { display: none; }
-    div[data-baseweb="slider"] > div:last-child { display: none; } /* Schová číslo u handle */
-
-    /* Kolejnice slideru */
-    div[data-baseweb="slider"] {
-        background-color: rgba(20, 20, 20, 0.9) !important;
-        border: 1px solid #222 !important;
-        height: 50px !important;
-        padding: 0px 5px !important;
-        border-radius: 4px !important;
-        margin-top: 5px !important;
-    }
-
-    /* Handle - Zelený čtverec s šipkou */
-    div[role="slider"] {
+    /* ZELENÉ TLAČÍTKO (shodné s J v logu) */
+    .stButton > button {
         background-color: #2ecc71 !important;
-        border-radius: 4px !important;
-        width: 40px !important;
-        height: 40px !important;
+        color: white !important;
         border: none !important;
-        box-shadow: 0 0 10px rgba(46, 204, 113, 0.5) !important;
-        cursor: grab !important;
-    }
-    div[role="slider"]:active { cursor: grabbing !important; }
-    
-    /* Vložení šipky do handle */
-    div[role="slider"]::after {
-        content: "→";
-        color: white;
-        font-size: 24px;
-        font-weight: bold;
-        position: absolute;
-        top: 50%; left: 50%;
-        transform: translate(-50%, -50%);
-    }
-
-    /* Zelený progres při tažení */
-    div[data-baseweb="slider"] div {
-        background-color: transparent; /* Reset výchozích barev */
-    }
-    /* Selektor pro levou část kolejnice (progress) */
-    div[data-baseweb="slider"] > div > div:first-child > div:first-child {
-        background-color: rgba(46, 204, 113, 0.3) !important; /* Průhledná zelená pro progres */
-        height: 40px !important;
+        height: 50px !important;
+        width: 100% !important;
         border-radius: 4px !important;
+        font-weight: 800 !important;
+        font-size: 16px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 1px !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 15px rgba(46, 204, 113, 0.2) !important;
+    }
+    
+    .stButton > button:hover {
+        background-color: #27ae60 !important; /* Mírně tmavší zelená při přejetí */
+        box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4) !important;
+        transform: translateY(-2px);
     }
 
     /* Ostatní UI */
@@ -143,21 +115,16 @@ if not st.session_state.authenticated:
         num = st.text_input("NUM", placeholder="PŘIHLAŠOVACÍ ČÍSLO", label_visibility="collapsed")
         pwd = st.text_input("PWD", type="password", placeholder="HESLO", label_visibility="collapsed")
         
-        # POTAŽENÍM DOPRAVA (Slider)
-        unlock = st.slider("UNLOCK", 0, 100, 0, key="unlock_slider")
-        
-        if unlock == 100:
+        st.write("\n")
+        if st.button("PŘIHLÁSIT SE"):
             if num == "1234" and pwd == "admin":
                 st.session_state.authenticated = True
-                st.success("AUTORIZACE ÚSPĚŠNÁ")
                 st.rerun()
             else:
                 st.error("PŘÍSTUP ZAMÍTNUT")
-                # Reset slideru by vyžadoval rerun, pro teď stačí upozornění
-                st.info("Vraťte posuvník doleva a zadejte správné údaje.")
     st.stop()
 
-# --- 4. VNITŘEK APLIKACE ---
+# --- 4. VNITŘEK APLIKACE (DASHBOARD) ---
 st.sidebar.markdown('### JT | CAPITAL')
 if st.sidebar.button("ODHLÁSIT SE"):
     st.session_state.authenticated = False
@@ -165,4 +132,5 @@ if st.sidebar.button("ODHLÁSIT SE"):
 
 st.title("🏛 Dashboard")
 st.write("Vítejte v uzavřené sekci JT | CAPITAL.")
-# Zde bude pokračovat tvůj dashboard...
+
+# Zde pak vložíme ten zbytek (Live grafy, fundamenty atd.)
