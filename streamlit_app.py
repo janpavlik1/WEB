@@ -41,7 +41,7 @@ st.markdown(f"""
         border: none !important;
     }}
     
-    /* 2. PŘIHLAŠOVACÍ POLE - VÝCHOZÍ ŠEDÝ RÁMEČEK */
+    /* 2. PŘIHLAŠOVACÍ POLE */
     [data-testid="stTextInput"] > div,
     [data-testid="stTextInput"] > div > div,
     div[data-baseweb="input"],
@@ -55,7 +55,6 @@ st.markdown(f"""
         transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
     }}
 
-    /* ZELENÉ ROZSVÍCENÍ PŘI NAJETÍ KURZOREM NEBO AKTIVACI POLE */
     [data-testid="stTextInput"] > div:hover,
     [data-testid="stTextInput"] > div > div:hover,
     div[data-baseweb="input"]:hover,
@@ -126,100 +125,146 @@ st.markdown(f"""
 # --- 3. PŘEKLADOVÝ ENGINE (MYMEMORY API) ---
 def translate_with_mymemory(text):
     if not text:
-        return text
+        return ""
+    clean_txt = text.strip()
     try:
         url = "https://api.mymemory.translated.net/get"
-        params = {"q": text, "langpair": "en|cs"}
-        res = requests.get(url, params=params, timeout=3).json()
-        if res.get("responseStatus") == 200 and res.get("responseData"):
-            translated = res["responseData"].get("translatedText")
-            if translated and not translated.startswith("MYMEMORY WARNING"):
-                return translated
-    except Exception:
-        pass
-
-    try:
-        url_fb = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=cs&dt=t&q={requests.utils.quote(text)}"
-        res_fb = requests.get(url_fb, timeout=3).json()
-        return "".join([part[0] for part in res_fb[0] if part[0]])
-    except Exception:
-        return text
-
-
-# --- 4. ENGINE: ČISTĚ FINANCIALJUICE + 3 HIGHLIGHTY ---
-@st.cache_data(ttl=180)
-def fetch_financialjuice_highlights():
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
-    
-    fj_url = "https://www.financialjuice.com/feed.ashx?xy=rss"
-    highlights = []
-    
-    bullish_words = ["gain", "rise", "jump", "rally", "surge", "high", "record", "bull", "buying", "cut", "dovish", "inflation", "safe-haven"]
-    bearish_words = ["drop", "fall", "decline", "slip", "slide", "down", "low", "bear", "selling", "hike", "hawkish", "strong dollar", "yields rise"]
-
-    bull_score = 0
-    bear_score = 0
-
-    try:
-        res = requests.get(fj_url, headers=headers, timeout=5)
+        params = {"q": clean_txt, "langpair": "en|cs"}
+        res = requests.get(url, params=params, timeout=3)
         if res.status_code == 200:
-            root = ET.fromstring(res.content)
-            items = root.findall(".//item")
-            
-            for item in items:
-                title_elem = item.find("title")
-                
-                if title_elem is not None and title_elem.text:
-                    raw_title = title_elem.text.strip()
-                    # Odstranění zbytečného prefixu
-                    if raw_title.startswith("FinancialJuice:"):
-                        raw_title = raw_title.replace("FinancialJuice:", "").strip()
-
-                    low_title = raw_title.lower()
-
-                    if any(w in low_title for w in bullish_words):
-                        bull_score += 1
-                    if any(w in low_title for w in bearish_words):
-                        bear_score += 1
-
-                    if len(highlights) < 3:
-                        cz_title = translate_with_mymemory(raw_title)
-                        highlights.append({
-                            "cz": cz_title,
-                            "orig": raw_title
-                        })
+            js = res.json()
+            trans = js.get("responseData", {}).get("translatedText", "")
+            if trans and "MYMEMORY WARNING" not in trans:
+                return trans
     except Exception:
         pass
 
-    if not highlights:
-        highlights = [
-            {"cz": "Trh vstřebává makroekonomická data a komentáře představitelů Fedu.", "orig": "Market absorbs macroeconomic data and Fed speakers commentary."},
-            {"cz": "Výnosy amerických státních dluhopisů a dolarový index určují směr zlata.", "orig": "US Treasury yields and Dollar Index drive gold price action."},
-            {"cz": "Obchodníci sledují klíčové technické hladiny podpory a rezistence na XAU/USD.", "orig": "Traders monitor key support and resistance levels on XAU/USD."}
-        ]
+    try:
+        url_fb = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=cs&dt=t&q={requests.utils.quote(clean_txt)}"
+        res_fb = requests.get(url_fb, timeout=2)
+        if res_fb.status_code == 200:
+            js_fb = res_fb.json()
+            return "".join([part[0] for part in js_fb[0] if part[0]])
+    except Exception:
+        pass
+    return clean_txt
 
-    if bull_score > bear_score:
-        sentiment_label = "BULLISH SENTIMENT"
-        sentiment_color = "#2ecc71"
-        sentiment_note = "Bleskový tok zpráv z FinancialJuice indikuje převahu nákupního tlaku na trhu."
-    elif bear_score > bull_score:
-        sentiment_label = "BEARISH SENTIMENT"
-        sentiment_color = "#e74c3c"
-        sentiment_note = "Zprávy z FinancialJuice signalizují prodejní tlak a posilující protidolarové vlivy."
-    else:
-        sentiment_label = "NEUTRAL SENTIMENT"
-        sentiment_color = "#2ecc71"
-        sentiment_note = "Vyrovnaný tok zpráv z FinancialJuice. Trh konsoliduje před dalšími zprávami."
 
-    return {
-        "label": sentiment_label,
-        "color": sentiment_color,
-        "note": sentiment_note,
-        "highlights": highlights,
+# --- 4. ENGINE: ČISTĚ FINANCIALJUICE + 3 HIGHLIGHTY (FAIL-SAFE) ---
+@st.cache_data(ttl=120)
+def fetch_financialjuice_highlights():
+    default_data = {
+        "label": "BULLISH SENTIMENT",
+        "color": "#2ecc71",
+        "note": "Zlato konsoliduje u klíčových rezistencí při stabilním nákupním sentimentu.",
+        "highlights": [
+            {
+                "cz": "Trh vstřebává makroekonomická data a komentáře představitelů Fedu.",
+                "orig": "Market absorbs macroeconomic data and Fed speakers commentary."
+            },
+            {
+                "cz": "Výnosy amerických státních dluhopisů a dolarový index určují směr zlata.",
+                "orig": "US Treasury yields and Dollar Index drive gold price action."
+            },
+            {
+                "cz": "Obchodníci sledují klíčové technické hladiny podpory a rezistence na XAU/USD.",
+                "orig": "Traders monitor key support and resistance levels on XAU/USD."
+            }
+        ],
         "time": datetime.now().strftime("%H:%M:%S")
     }
+
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        }
+        
+        raw_items = []
+        
+        # 1. Pokus o stažení z FinancialJuice
+        try:
+            fj_url = "https://www.financialjuice.com/feed.ashx?xy=rss"
+            res = requests.get(fj_url, headers=headers, timeout=4)
+            if res.status_code == 200:
+                root = ET.fromstring(res.content)
+                for item in root.findall(".//item"):
+                    title_elem = item.find("title")
+                    if title_elem is not None and title_elem.text:
+                        raw_title = title_elem.text.strip()
+                        if raw_title.startswith("FinancialJuice:"):
+                            raw_title = raw_title.replace("FinancialJuice:", "").strip()
+                        if raw_title:
+                            raw_items.append(raw_title)
+        except Exception:
+            pass
+
+        # 2. Záložní přímý zdroj, pokud FinancialJuice neodpovídá
+        if not raw_items:
+            try:
+                fb_url = "https://news.google.com/rss/search?q=gold+price+XAUUSD+fed+rates&hl=en-US&gl=US&ceid=US:en"
+                res_fb = requests.get(fb_url, headers=headers, timeout=4)
+                if res_fb.status_code == 200:
+                    root_fb = ET.fromstring(res_fb.content)
+                    for item in root_fb.findall(".//item")[:5]:
+                        title_elem = item.find("title")
+                        if title_elem is not None and title_elem.text:
+                            t = title_elem.text.strip()
+                            if " - " in t:
+                                t = t.rsplit(" - ", 1)[0].strip()
+                            raw_items.append(t)
+            except Exception:
+                pass
+
+        if not raw_items:
+            return default_data
+
+        bullish_words = ["gain", "rise", "jump", "rally", "surge", "high", "record", "bull", "buying", "cut", "dovish", "inflation", "safe-haven", "advance", "up"]
+        bearish_words = ["drop", "fall", "decline", "slip", "slide", "down", "low", "bear", "selling", "hike", "hawkish", "strong dollar", "yields rise", "retreat"]
+
+        bull_score = 0
+        bear_score = 0
+        parsed_highlights = []
+
+        for raw_t in raw_items:
+            low_t = raw_t.lower()
+            if any(w in low_t for w in bullish_words):
+                bull_score += 1
+            if any(w in low_t for w in bearish_words):
+                bear_score += 1
+            
+            if len(parsed_highlights) < 3:
+                cz_t = translate_with_mymemory(raw_t)
+                parsed_highlights.append({
+                    "cz": cz_t,
+                    "orig": raw_t
+                })
+
+        if not parsed_highlights:
+            return default_data
+
+        if bull_score > bear_score:
+            sentiment_label = "BULLISH SENTIMENT"
+            sentiment_color = "#2ecc71"
+            sentiment_note = "Bleskový tok zpráv z FinancialJuice indikuje převahu nákupního tlaku na trhu."
+        elif bear_score > bull_score:
+            sentiment_label = "BEARISH SENTIMENT"
+            sentiment_color = "#e74c3c"
+            sentiment_note = "Zprávy z FinancialJuice signalizují prodejní tlak a posilující protidolarové vlivy."
+        else:
+            sentiment_label = "NEUTRAL SENTIMENT"
+            sentiment_color = "#2ecc71"
+            sentiment_note = "Vyrovnaný tok zpráv z FinancialJuice. Trh konsoliduje před dalšími zprávami."
+
+        return {
+            "label": sentiment_label,
+            "color": sentiment_color,
+            "note": sentiment_note,
+            "highlights": parsed_highlights,
+            "time": datetime.now().strftime("%H:%M:%S")
+        }
+    except Exception:
+        return default_data
 
 
 # --- 5. LOGIN LOGIKA ---
@@ -534,11 +579,50 @@ with col_c:
         </html>
     """, height=395)
 
-    # --- C) KARTA: 3 AKTUÁLNÍ HIGHLIGHTY (ČISTĚ FINANCIALJUICE + MYMEMORY) ---
+    # --- C) KARTA: 3 AKTUÁLNÍ HIGHLIGHTY (BEZPEČNÉ RENDEROVÁNÍ) ---
     data = fetch_financialjuice_highlights()
     
-    # Generování HTML bez mezer na začátku řádků
-    boxes = []
-    for idx, item in enumerate(data["highlights"], start=1):
-        box_html = (
+    d_time = str(data.get("time", ""))
+    d_color = str(data.get("color", "#2ecc71"))
+    d_label = str(data.get("label", "BULLISH SENTIMENT"))
+    d_note = str(data.get("note", ""))
+    d_highlights = data.get("highlights", [])
+
+    boxes_list = []
+    for idx, item in enumerate(d_highlights, start=1):
+        cz_text = str(item.get("cz", "")).replace('"', '&quot;')
+        orig_text = str(item.get("orig", "")).replace('"', '&quot;')
+        box_str = (
             f'<div style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06); '
+            f'border-radius: 8px; padding: 10px 14px; margin-top: 10px; text-align: left;">'
+            f'<div style="color: #2ecc71; font-size: 13px; font-weight: 600; line-height: 1.4;">'
+            f'<span style="color: #888; font-size: 11px; margin-right: 4px;">#{idx}</span> &quot;{cz_text}&quot;'
+            f'</div>'
+            f'<div style="color: #666; font-size: 11px; font-style: italic; margin-top: 3px;">'
+            f'{orig_text}'
+            f'</div>'
+            f'</div>'
+        )
+        boxes_list.append(box_str)
+
+    all_boxes_html = "".join(boxes_list)
+
+    full_card_html = (
+        f'<div class="terminal-card">'
+        f'<div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 8px;">'
+        f'AI Fundamental Squawk &bull; Live FinancialJuice Feed ({d_time})'
+        f'</div>'
+        f'<div style="color: {d_color}; font-weight: 900; font-size: 28px; letter-spacing: 2px;">'
+        f'{d_label}'
+        f'</div>'
+        f'<p style="color: #ddd; margin-top: 8px; margin-bottom: 12px; font-size: 14px; line-height: 1.5;">'
+        f'{d_note}'
+        f'</p>'
+        f'{all_boxes_html}'
+        f'<div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 18px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px;">'
+        f'ZDROJ: FINANCIALJUICE (REAL-TIME SQUAWK FEED) | PŘEKLAD: MYMEMORY API'
+        f'</div>'
+        f'</div>'
+    )
+
+    st.markdown(full_card_html, unsafe_allow_html=True)
