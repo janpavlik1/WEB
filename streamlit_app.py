@@ -11,6 +11,7 @@ st.set_page_config(
 # --- 2. TOTÁLNÍ DESIGN (CSS) ---
 st.markdown("""
     <style>
+    /* Odstranění pozadí Streamlitu */
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stMainBlockContainer"], 
     [data-testid="stVerticalBlock"], [data-testid="stVerticalBlockBorderWrapper"], .stApp {
         background: transparent !important;
@@ -19,6 +20,21 @@ st.markdown("""
     [data-testid="stSidebar"] { display: none !important; }
     [data-testid="InputInstructions"] { display: none !important; }
     
+    /* DEFINITIVNÍ ODSTRANĚNÍ ČERVENÉHO/MODRÉHO RÁMEČKU */
+    input {
+        outline: none !important;
+        box-shadow: none !important;
+        -webkit-box-shadow: none !important;
+    }
+    .stTextInput>div>div {
+        border: 1px solid #333 !important;
+        box-shadow: none !important;
+    }
+    .stTextInput>div>div:focus-within {
+        border: 1px solid #2ecc71 !important;
+        box-shadow: none !important;
+    }
+
     body { background-color: #000000 !important; }
     #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
     
@@ -30,10 +46,10 @@ st.markdown("""
     .stTextInput>div>div>input {
         background-color: rgba(25, 25, 25, 0.9) !important;
         color: white !important;
-        border: 1px solid #333 !important;
         text-align: center !important;
         height: 55px !important;
         border-radius: 6px !important;
+        font-size: 16px !important;
     }
     
     /* Login Button */
@@ -46,6 +62,11 @@ st.markdown("""
         border-radius: 6px !important;
         font-weight: 800 !important;
         text-transform: uppercase !important;
+        transition: 0.3s;
+    }
+    div.stButton > button:hover {
+        background-color: #27ae60 !important;
+        transform: scale(1.01);
     }
 
     /* Sentiment Box */
@@ -58,7 +79,6 @@ st.markdown("""
         margin-top: 20px;
     }
     .sentiment-bullish { color: #2ecc71; font-weight: 900; font-size: 28px; letter-spacing: 2px; }
-    .sentiment-bearish { color: #e74c3c; font-weight: 900; font-size: 28px; letter-spacing: 2px; }
 
     footer, header, #MainMenu { visibility: hidden; }
     </style>
@@ -138,24 +158,16 @@ with col_c:
     """, height=360)
 
     # 2. AI MARKET SENTIMENT BOX
-    # Zde v budoucnu propojíme AI analýzu z Reuters/Bloomberg
-    # Pro demonstraci: Bullish scénář
     st.markdown("""
     <div class="sentiment-card">
         <div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 12px; margin-bottom: 10px;">AI Terminal Analysis</div>
         <div class="sentiment-bullish">BULLISH SENTIMENT</div>
         <p style="color: #bbb; margin-top: 15px; font-size: 16px; line-height: 1.6;">
-            Zlato testuje denní rezistenci. Fundamentální data z Reuters naznačují oslabování dolaru (DXY). 
+            Zlato testuje denní rezistenci. Fundamentální data naznačují oslabování dolaru (DXY). 
             Sledujte možnost bullish breakoutu nad aktuální hladinu.
         </p>
         <div style="border-top: 1px solid #333; margin-top: 20px; padding-top: 10px; color: #555; font-size: 11px;">
-            POSLEDNÍ AKTUALIZACE: PŘED 2 MINUTAMI | SOURCE: AI ENGINE 1.0
+            POSLEDNÍ AKTUALIZACE: PŘED CHVÍLÍ | SOURCE: AI ENGINE 1.0
         </div>
     </div>
     """, unsafe_allow_html=True)
-
-# Tlačítko pro odhlášení (skryté dole pro čistotu)
-st.markdown("<br><br>", unsafe_allow_html=True)
-if st.button("ODHLÁSIT SE", use_container_width=False):
-    st.session_state.authenticated = False
-    st.rerun()
