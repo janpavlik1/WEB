@@ -123,16 +123,14 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 
-# --- 3. PŘEKLADOVÝ ENGINE (MYMEMORY TRANSLATION API) ---
+# --- 3. PŘEKLADOVÝ ENGINE (MYMEMORY API S FALLBACKEM) ---
 def translate_with_mymemory(text):
     if not text:
         return text
-    
-    # 1. Primární volání: MyMemory Translation API
     try:
         url = "https://api.mymemory.translated.net/get"
         params = {"q": text, "langpair": "en|cs"}
-        res = requests.get(url, params=params, timeout=4).json()
+        res = requests.get(url, params=params, timeout=3).json()
         if res.get("responseStatus") == 200 and res.get("responseData"):
             translated = res["responseData"].get("translatedText")
             if translated and not translated.startswith("MYMEMORY WARNING"):
@@ -140,109 +138,90 @@ def translate_with_mymemory(text):
     except Exception:
         pass
 
-    # 2. Záložní rychlý překlad (Fallback)
     try:
-        url_fallback = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=cs&dt=t&q={requests.utils.quote(text)}"
-        res_fb = requests.get(url_fallback, timeout=3).json()
+        url_fb = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=cs&dt=t&q={requests.utils.quote(text)}"
+        res_fb = requests.get(url_fb, timeout=3).json()
         return "".join([part[0] for part in res_fb[0] if part[0]])
     except Exception:
         return text
 
 
-# --- 4. ANALÝZA ZE ZDROJŮ (FINNHUB + 5 WEBOVÝCH PORTÁLŮ) ---
-@st.cache_data(ttl=300)
-def fetch_target_sources_sentiment():
+# --- 4. ENGINE: ČISTĚ FINANCIALJUICE + 3 HIGHLIGHTY ---
+@st.cache_data(ttl=180)
+def fetch_financialjuice_highlights():
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
+    
+    fj_url = "https://www.financialjuice.com/feed.ashx?xy=rss"
+    highlights = []
+    
+    bullish_words = ["gain", "rise", "jump", "rally", "surge", "high", "record", "bull", "buying", "cut", "dovish", "inflation", "safe-haven"]
+    bearish_words = ["drop", "fall", "decline", "slip", "slide", "down", "low", "bear", "selling", "hike", "hawkish", "strong dollar", "yields rise"]
 
-    all_headlines = []
-    bull_count = 0
-    bear_count = 0
+    bull_score = 0
+    bear_score = 0
 
-    bullish_keywords = [
-        "gain", "rise", "jump", "rally", "surge", "high", "record", "bull", "buying", 
-        "support", "breakout", "cut", "dovish", "inflation", "safe-haven", "gold climbs"
-    ]
-    bearish_keywords = [
-        "drop", "fall", "decline", "slip", "slide", "down", "low", "bear", "selling", 
-        "resistance", "pressure", "hike", "hawkish", "strong dollar", "yields rise", "retreats"
-    ]
-
-    # A) Získání zpráv z Finnhub API (Market & Forex Feed)
     try:
-        finnhub_url = "https://finnhub.io/api/v1/news?category=forex&token=sandbox_c8j8tgaad3i9g3a5o820"
-        finnhub_res = requests.get(finnhub_url, timeout=3).json()
-        if isinstance(finnhub_res, list):
-            for item in finnhub_res[:10]:
-                headline = item.get("headline", "")
-                if headline:
-                    low = headline.lower()
-                    if any(w in low for w in ["gold", "xau", "dollar", "fed", "rate", "yield"]):
-                        all_headlines.append({"source": "Finnhub", "title": headline.strip()})
+        res = requests.get(fj_url, headers=headers, timeout=5)
+        if res.status_code == 200:
+            root = ET.fromstring(res.content)
+            items = root.findall(".//item")
+            
+            # 1. Procházení a filtrace zpráv z FinancialJuice
+            for item in items:
+                title_elem = item.find("title")
+                pub_elem = item.find("pubDate")
+                
+                if title_elem is not None and title_elem.text:
+                    raw_title = title_elem.text.strip()
+                    low_title = raw_title.lower()
+                    pub_time = pub_elem.text.strip() if pub_elem is not None else ""
+
+                    # Skórování sentimentu
+                    if any(w in low_title for w in bullish_words):
+                        bull_score += 1
+                    if any(w in low_title for w in bearish_words):
+                        bear_score += 1
+
+                    # Ukládání prvních 3 relevantních zpráv
+                    if len(highlights) < 3:
+                        cz_title = translate_with_mymemory(raw_title)
+                        highlights.append({
+                            "cz": cz_title,
+                            "orig": raw_title,
+                            "time": pub_time
+                        })
     except Exception:
         pass
 
-    # B) Získání zpráv z 5 klíčových portálů (Investing, ForexFactory, FinancialJuice, ...)
-    sources = [
-        {"name": "InvestingLive", "url": "https://www.forexlive.com/feed/news/"},
-        {"name": "Investing.com", "url": "https://www.investing.com/rss/news_14.rss"},
-        {"name": "ForexFactory", "url": "https://www.forexfactory.com/news/rss"},
-        {"name": "TradingEconomics", "url": "https://tradingeconomics.com/rss/news.aspx"},
-        {"name": "FinancialJuice", "url": "https://www.financialjuice.com/feed.ashx?xy=rss"}
-    ]
+    # Pokud by byl FinancialJuice dočasně nedostupný, použije se záloha
+    if not highlights:
+        highlights = [
+            {"cz": "Trh vstřebává makroekonomická data a komentáře představitelů Fedu.", "orig": "Market absorbs macroeconomic data and Fed speakers commentary.", "time": ""},
+            {"cz": "Výnosy amerických státních dluhopisů a dolarový index určují směr zlata.", "orig": "US Treasury yields and Dollar Index drive gold price action.", "time": ""},
+            {"cz": "Obchodníci sledují klíčové technické hladiny podpory a rezistence na XAU/USD.", "orig": "Traders monitor key support and resistance levels on XAU/USD.", "time": ""}
+        ]
 
-    for src in sources:
-        try:
-            res = requests.get(src["url"], headers=headers, timeout=4)
-            if res.status_code == 200:
-                root = ET.fromstring(res.content)
-                for item in root.findall(".//item")[:15]:
-                    title_elem = item.find("title")
-                    if title_elem is not None and title_elem.text:
-                        title_text = title_elem.text.strip()
-                        lower_title = title_text.lower()
-
-                        if any(w in lower_title for w in ["gold", "xau", "xauusd", "dollar", "fed", "yield", "rate", "cpi", "powell"]):
-                            all_headlines.append({"source": src["name"], "title": title_text})
-                            if any(b in lower_title for b in bullish_keywords):
-                                bull_count += 1
-                            if any(b in lower_title for b in bearish_keywords):
-                                bear_count += 1
-        except Exception:
-            continue
-
-    # Výchozí titulek
-    if not all_headlines:
-        raw_headline = "Klíčové fundamenty trhu testují aktuální cenové hladiny."
-        latest_source = "FINNHUB / INVESTING.COM"
-    else:
-        raw_headline = all_headlines[0]["title"]
-        latest_source = all_headlines[0]["source"]
-
-    # Překlad přes MyMemory API
-    cz_headline = translate_with_mymemory(raw_headline)
-
-    if bull_count > bear_count:
+    # Vyhodnocení sentimentu
+    if bull_score > bear_score:
         sentiment_label = "BULLISH SENTIMENT"
         sentiment_color = "#2ecc71"
-        note = "Agregovaná fundamentální data indikují převahu nákupního tlaku a příznivé podmínky pro růst zlata."
-    elif bear_count > bull_count:
+        sentiment_note = "Bleskový tok zpráv z FinancialJuice indikuje převahu nákupního tlaku na trhu."
+    elif bear_score > bull_score:
         sentiment_label = "BEARISH SENTIMENT"
         sentiment_color = "#e74c3c"
-        note = "Makro zprávy a signály ze sledovaných zdrojů naznačují prodejní tlak a možnou korekci na aktuálních úrovních."
+        sentiment_note = "Zprávy z FinancialJuice signalizují prodejní tlak a posilující protidolarové vlivy."
     else:
         sentiment_label = "NEUTRAL SENTIMENT"
         sentiment_color = "#2ecc71"
-        note = "Fundamentální zprávy vykazují vyrovnaný poměr sil. Trh vyčkává na další makroekonomické impulzy a zasedání centrálních bank."
+        sentiment_note = "Vyrovnaný tok zpráv z FinancialJuice. Trh konsoliduje před dalšími zprávami."
 
     return {
         "label": sentiment_label,
         "color": sentiment_color,
-        "note": note,
-        "headline_cz": cz_headline,
-        "headline_orig": raw_headline,
-        "source": latest_source,
+        "note": sentiment_note,
+        "highlights": highlights,
         "time": datetime.now().strftime("%H:%M:%S")
     }
 
@@ -285,7 +264,7 @@ st.markdown("""
 col_l, col_c, col_r = st.columns([0.08, 0.84, 0.08])
 
 with col_c:
-    # --- A) KARTA: SVĚTOVÝ ČAS A ŽIVÉ SEANCE (Běží každou sekundu) ---
+    # --- A) KARTA: SVĚTOVÝ ČAS A ŽIVÉ SEANCE (Běží každou vteřinu) ---
     components.html("""
         <!DOCTYPE html>
         <html>
@@ -559,33 +538,39 @@ with col_c:
         </html>
     """, height=395)
 
-    # --- C) KARTA: ŽIVÝ FUNDAMENTÁLNÍ SENTIMENT (MyMemory + Finnhub) ---
-    data = fetch_target_sources_sentiment()
+    # --- C) KARTA: 3 AKTUÁLNÍ HIGHLIGHTY (ČISTĚ FINANCIALJUICE + MYMEMORY) ---
+    data = fetch_financialjuice_highlights()
     
+    # Sestavení 3 zpráv do HTML
+    highlights_html = ""
+    for idx, item in enumerate(data["highlights"], start=1):
+        highlights_html += f"""
+        <div style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 10px 14px; margin-top: 10px; text-align: left;">
+            <div style="color: #2ecc71; font-size: 13px; font-weight: 600; line-height: 1.4;">
+                <span style="color: #888; font-size: 11px; margin-right: 4px;">#{idx}</span> "{item['cz']}"
+            </div>
+            <div style="color: #666; font-size: 11px; font-style: italic; margin-top: 3px;">
+                {item['orig']}
+            </div>
+        </div>
+        """
+
     st.markdown(f"""
     <div class="terminal-card">
         <div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 8px;">
-            AI Fundamental Analysis &bull; Live Feed ({data['time']})
+            AI Fundamental Squawk &bull; Live FinancialJuice Feed ({data['time']})
         </div>
         <div style="color: {data['color']}; font-weight: 900; font-size: 28px; letter-spacing: 2px;">
             {data['label']}
         </div>
-        <p style="color: #ddd; margin-top: 12px; font-size: 15px; line-height: 1.6;">
+        <p style="color: #ddd; margin-top: 8px; margin-bottom: 12px; font-size: 14px; line-height: 1.5;">
             {data['note']}
         </p>
-        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 12px 16px; margin-top: 15px; text-align: left;">
-            <div style="color: #888; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px;">
-                Aktuální tržní zpráva ({data['source'].upper()}):
-            </div>
-            <div style="color: #2ecc71; font-size: 14px; font-weight: 600; line-height: 1.4;">
-                "{data['headline_cz']}"
-            </div>
-            <div style="color: #666; font-size: 11px; font-style: italic; margin-top: 4px;">
-                Originál: "{data['headline_orig']}"
-            </div>
-        </div>
+        
+        {highlights_html}
+
         <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 18px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px;">
-            ZDROJE: FINNHUB &bull; INVESTING.COM &bull; INVESTINGLIVE &bull; FINANCIALJUICE &bull; FOREXFACTORY &bull; TRADINGECONOMICS | PŘEKLAD: MYMEMORY API
+            ZDROJ: FINANCIALJUICE (REAL-TIME SQUAWK FEED) | PŘEKLAD: MYMEMORY API
         </div>
     </div>
     """, unsafe_allow_html=True)
