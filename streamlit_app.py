@@ -123,7 +123,7 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 
-# --- 3. PŘEKLADOVÝ ENGINE (MYMEMORY API S FALLBACKEM) ---
+# --- 3. PŘEKLADOVÝ ENGINE (MYMEMORY API) ---
 def translate_with_mymemory(text):
     if not text:
         return text
@@ -168,42 +168,38 @@ def fetch_financialjuice_highlights():
             root = ET.fromstring(res.content)
             items = root.findall(".//item")
             
-            # 1. Procházení a filtrace zpráv z FinancialJuice
             for item in items:
                 title_elem = item.find("title")
-                pub_elem = item.find("pubDate")
                 
                 if title_elem is not None and title_elem.text:
                     raw_title = title_elem.text.strip()
-                    low_title = raw_title.lower()
-                    pub_time = pub_elem.text.strip() if pub_elem is not None else ""
+                    # Odstranění zbytečného prefixu
+                    if raw_title.startswith("FinancialJuice:"):
+                        raw_title = raw_title.replace("FinancialJuice:", "").strip()
 
-                    # Skórování sentimentu
+                    low_title = raw_title.lower()
+
                     if any(w in low_title for w in bullish_words):
                         bull_score += 1
                     if any(w in low_title for w in bearish_words):
                         bear_score += 1
 
-                    # Ukládání prvních 3 relevantních zpráv
                     if len(highlights) < 3:
                         cz_title = translate_with_mymemory(raw_title)
                         highlights.append({
                             "cz": cz_title,
-                            "orig": raw_title,
-                            "time": pub_time
+                            "orig": raw_title
                         })
     except Exception:
         pass
 
-    # Pokud by byl FinancialJuice dočasně nedostupný, použije se záloha
     if not highlights:
         highlights = [
-            {"cz": "Trh vstřebává makroekonomická data a komentáře představitelů Fedu.", "orig": "Market absorbs macroeconomic data and Fed speakers commentary.", "time": ""},
-            {"cz": "Výnosy amerických státních dluhopisů a dolarový index určují směr zlata.", "orig": "US Treasury yields and Dollar Index drive gold price action.", "time": ""},
-            {"cz": "Obchodníci sledují klíčové technické hladiny podpory a rezistence na XAU/USD.", "orig": "Traders monitor key support and resistance levels on XAU/USD.", "time": ""}
+            {"cz": "Trh vstřebává makroekonomická data a komentáře představitelů Fedu.", "orig": "Market absorbs macroeconomic data and Fed speakers commentary."},
+            {"cz": "Výnosy amerických státních dluhopisů a dolarový index určují směr zlata.", "orig": "US Treasury yields and Dollar Index drive gold price action."},
+            {"cz": "Obchodníci sledují klíčové technické hladiny podpory a rezistence na XAU/USD.", "orig": "Traders monitor key support and resistance levels on XAU/USD."}
         ]
 
-    # Vyhodnocení sentimentu
     if bull_score > bear_score:
         sentiment_label = "BULLISH SENTIMENT"
         sentiment_color = "#2ecc71"
@@ -264,7 +260,7 @@ st.markdown("""
 col_l, col_c, col_r = st.columns([0.08, 0.84, 0.08])
 
 with col_c:
-    # --- A) KARTA: SVĚTOVÝ ČAS A ŽIVÉ SEANCE (Běží každou vteřinu) ---
+    # --- A) KARTA: SVĚTOVÝ ČAS A ŽIVÉ SEANCE ---
     components.html("""
         <!DOCTYPE html>
         <html>
@@ -541,36 +537,8 @@ with col_c:
     # --- C) KARTA: 3 AKTUÁLNÍ HIGHLIGHTY (ČISTĚ FINANCIALJUICE + MYMEMORY) ---
     data = fetch_financialjuice_highlights()
     
-    # Sestavení 3 zpráv do HTML
-    highlights_html = ""
+    # Generování HTML bez mezer na začátku řádků
+    boxes = []
     for idx, item in enumerate(data["highlights"], start=1):
-        highlights_html += f"""
-        <div style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 10px 14px; margin-top: 10px; text-align: left;">
-            <div style="color: #2ecc71; font-size: 13px; font-weight: 600; line-height: 1.4;">
-                <span style="color: #888; font-size: 11px; margin-right: 4px;">#{idx}</span> "{item['cz']}"
-            </div>
-            <div style="color: #666; font-size: 11px; font-style: italic; margin-top: 3px;">
-                {item['orig']}
-            </div>
-        </div>
-        """
-
-    st.markdown(f"""
-    <div class="terminal-card">
-        <div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 8px;">
-            AI Fundamental Squawk &bull; Live FinancialJuice Feed ({data['time']})
-        </div>
-        <div style="color: {data['color']}; font-weight: 900; font-size: 28px; letter-spacing: 2px;">
-            {data['label']}
-        </div>
-        <p style="color: #ddd; margin-top: 8px; margin-bottom: 12px; font-size: 14px; line-height: 1.5;">
-            {data['note']}
-        </p>
-        
-        {highlights_html}
-
-        <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 18px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px;">
-            ZDROJ: FINANCIALJUICE (REAL-TIME SQUAWK FEED) | PŘEKLAD: MYMEMORY API
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+        box_html = (
+            f'<div style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06); '
