@@ -145,7 +145,7 @@ st.markdown('<div class="logo-container"><div class="logo-text" style="font-size
 col_l, col_c, col_r = st.columns([0.1, 0.8, 0.1])
 
 with col_c:
-    # 1. KARTA S GRAFEM (Se zaoblenými rohy uvnitř i zvenčí)
+    # 1. KARTA S GRAFEM (1:1 stylovaná stejně jako spodní sentiment karta)
     components.html("""
         <!DOCTYPE html>
         <html>
@@ -156,29 +156,39 @@ with col_c:
                     padding: 0;
                     background: transparent !important;
                     overflow: hidden;
+                    font-family: sans-serif;
                 }
                 * {
                     box-sizing: border-box;
                 }
-                .tradingview-widget-container, 
+
+                /* Identický styl jako .terminal-card */
+                .terminal-card {
+                    background-color: rgba(10, 10, 10, 0.6) !important;
+                    backdrop-filter: blur(12px) !important;
+                    -webkit-backdrop-filter: blur(12px) !important;
+                    padding: 25px 30px;
+                    border-radius: 15px;
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+                    width: calc(100% - 10px);
+                    margin: 5px auto;
+                    overflow: hidden;
+                    transform: translateZ(0);
+                }
+
+                /* Zaoblení samotného TradingView grafu uvnitř karty */
+                .tradingview-widget-container,
+                .tradingview-widget-container > div,
                 .tradingview-widget-container iframe {
-                    border-radius: 12px !important;
+                    border-radius: 10px !important;
                     overflow: hidden !important;
+                    transform: translateZ(0) !important;
                 }
             </style>
         </head>
         <body>
-            <div style="
-                background-color: rgba(10, 10, 10, 0.6);
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
-                padding: 20px 25px;
-                border-radius: 15px;
-                border: 1px solid rgba(255, 255, 255, 0.08);
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-                width: 100%;
-                overflow: hidden;
-            ">
+            <div class="terminal-card">
                 <div class="tradingview-widget-container">
                   <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
                   {
@@ -202,7 +212,7 @@ with col_c:
             </div>
         </body>
         </html>
-    """, height=400)
+    """, height=425)
 
     # 2. KARTA SE SENTIMENTEM
     st.markdown("""
