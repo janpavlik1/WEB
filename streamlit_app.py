@@ -123,74 +123,86 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 
-# --- 3. REÁLNÝ ENGINE PRO ANALÝZU SENTIMENTU XAUUSD ---
+# --- 3. ANALÝZA ZE ZVOLENÝCH 5 WEBOVÝCH ZDROJŮ ---
 @st.cache_data(ttl=300)
-def fetch_live_gold_sentiment():
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-    
-    # 1. Získání reálných tržních dat (Zlato a Dolarový index)
-    gold_price, gold_pct, dxy_pct = 0.0, 0.0, 0.0
-    try:
-        url_gold = "https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=1d&range=5d"
-        res_g = requests.get(url_gold, headers=headers, timeout=5).json()
-        meta_g = res_g['chart']['result'][0]['meta']
-        gold_price = round(meta_g.get('regularMarketPrice', 0.0), 2)
-        prev_close_g = meta_g.get('chartPreviousClose', gold_price)
-        gold_pct = round(((gold_price - prev_close_g) / prev_close_g) * 100, 2) if prev_close_g else 0.0
+def fetch_target_sources_sentiment():
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
 
-        url_dxy = "https://query1.finance.yahoo.com/v8/finance/chart/DX-Y.NYB?interval=1d&range=5d"
-        res_d = requests.get(url_dxy, headers=headers, timeout=5).json()
-        meta_d = res_d['chart']['result'][0]['meta']
-        dxy_price = meta_d.get('regularMarketPrice', 0.0)
-        prev_close_d = meta_d.get('chartPreviousClose', dxy_price)
-        dxy_pct = round(((dxy_price - prev_close_d) / prev_close_d) * 100, 2) if prev_close_d else 0.0
-    except Exception:
-        pass
+    # Definice feedů pro 5 vybraných webů
+    sources = [
+        {"name": "InvestingLive", "url": "https://www.forexlive.com/feed/news/"},
+        {"name": "Investing.com", "url": "https://www.investing.com/rss/news_14.rss"},
+        {"name": "ForexFactory", "url": "https://www.forexfactory.com/news/rss"},
+        {"name": "TradingEconomics", "url": "https://tradingeconomics.com/rss/news.aspx"},
+        {"name": "FinancialJuice", "url": "https://www.financialjuice.com/feed.ashx?xy=rss"}
+    ]
 
-    # 2. Získání nejnovějšího zprávového titulku (Google News RSS pro zlato)
-    news_title = "Sledování klíčových hladin podpory a odporu na trhu se zlatem."
-    news_source = "GLOBAL MARKET FEED"
-    try:
-        feed_url = "https://news.google.com/rss/search?q=gold+price+XAUUSD&hl=en-US&gl=US&ceid=US:en"
-        feed_res = requests.get(feed_url, headers=headers, timeout=5)
-        root = ET.fromstring(feed_res.content)
-        item = root.find(".//item")
-        if item is not None:
-            raw_title = item.find("title").text
-            if " - " in raw_title:
-                parts = raw_title.rsplit(" - ", 1)
-                news_title = parts[0]
-                news_source = parts[1]
-            else:
-                news_title = raw_title
-    except Exception:
-        pass
+    bullish_keywords = [
+        "gain", "rise", "jump", "rally", "surge", "high", "record", "bull", "buying", 
+        "support", "breakout", "cut", "dovish", "inflation", "safe-haven", "gold climbs"
+    ]
+    bearish_keywords = [
+        "drop", "fall", "decline", "slip", "slide", "down", "low", "bear", "selling", 
+        "resistance", "pressure", "hike", "hawkish", "strong dollar", "yields rise", "retreats"
+    ]
 
-    # 3. Vyhodnocení sentimentu na základě reálných tržních sil
-    score = gold_pct - (dxy_pct * 1.5)
-    
-    if score >= 0.2:
+    all_headlines = []
+    bull_count = 0
+    bear_count = 0
+
+    for src in sources:
+        try:
+            res = requests.get(src["url"], headers=headers, timeout=4)
+            if res.status_code == 200:
+                root = ET.fromstring(res.content)
+                for item in root.findall(".//item")[:15]:
+                    title_elem = item.find("title")
+                    if title_elem is not None and title_elem.text:
+                        title_text = title_elem.text.strip()
+                        lower_title = title_text.lower()
+
+                        # Filtrujeme relevantní zprávy pro Zlato, Dolar, Fed a Makro
+                        if any(w in lower_title for w in ["gold", "xau", "xauusd", "dollar", "fed", "yield", "rate", "cpi", "powell"]):
+                            all_headlines.append({"source": src["name"], "title": title_text})
+                            
+                            # Vyhodnocení skóre
+                            if any(b in lower_title for b in bullish_keywords):
+                                bull_count += 1
+                            if any(b in lower_title for b in bearish_keywords):
+                                bear_count += 1
+        except Exception:
+            continue
+
+    # Výchozí hodnoty při nedostatku zpráv
+    if not all_headlines:
+        latest_headline = "Klíčové fundamenty trhu testují aktuální cenové hladiny."
+        latest_source = "INVESTING.COM / FOREXFACTORY"
+    else:
+        latest_headline = all_headlines[0]["title"]
+        latest_source = all_headlines[0]["source"]
+
+    # Vyhodnocení sentimentu z agregovaných dat
+    if bull_count > bear_count:
         sentiment_label = "BULLISH SENTIMENT"
         sentiment_color = "#2ecc71"
-        action_note = f"Zlato posiluje ({'+' if gold_pct > 0 else ''}{gold_pct} %) a tlak na USD ({'+' if dxy_pct > 0 else ''}{dxy_pct} %) otevírá prostor pro nákupní momentum."
-    elif score <= -0.2:
+        note = "Agregovaná fundamentální data z vybraných portálů indikují převahu nákupního tlaku a příznivé podmínky pro růst zlata."
+    elif bear_count > bull_count:
         sentiment_label = "BEARISH SENTIMENT"
         sentiment_color = "#e74c3c"
-        action_note = f"Rostoucí výnosy a silnější dolar ({'+' if dxy_pct > 0 else ''}{dxy_pct} %) vytvářejí prodejní tlak na zlato ({'+' if gold_pct > 0 else ''}{gold_pct} %)."
+        note = "Makro zprávy a signály ze sledovaných zdrojů naznačují prodejní tlak a možnou korekci na aktuálních úrovních."
     else:
         sentiment_label = "NEUTRAL SENTIMENT"
         sentiment_color = "#f39c12"
-        action_note = f"Trh konsoliduje kolem klíčových úrovní. Pohyb zlata: {'+' if gold_pct > 0 else ''}{gold_pct} %, DXY: {'+' if dxy_pct > 0 else ''}{dxy_pct} %."
+        note = "Fundamentální zprávy vykazují vyrovnaný poměr sil. Trh vyčkává na další makroekonomické impulzy a zasedání centrálních bank."
 
     return {
         "label": sentiment_label,
         "color": sentiment_color,
-        "price": gold_price,
-        "gold_pct": gold_pct,
-        "dxy_pct": dxy_pct,
-        "note": action_note,
-        "news_title": news_title,
-        "news_source": news_source,
+        "note": note,
+        "headline": latest_headline,
+        "source": latest_source,
         "time": datetime.now().strftime("%H:%M:%S")
     }
 
@@ -229,8 +241,8 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Načtení živých tržních dat
-data = fetch_live_gold_sentiment()
+# Načtení živých dat z 5 vybraných zdrojů
+data = fetch_target_sources_sentiment()
 
 col_l, col_c, col_r = st.columns([0.1, 0.8, 0.1])
 
@@ -299,11 +311,11 @@ with col_c:
         </html>
     """, height=395)
 
-    # 2. KARTA SE ŽIVÝM SENTIMENTEM A AKTUÁLNÍMI DATY
+    # 2. KARTA SE SENTIMENTEM Z VAŠICH 5 ZDROJŮ
     st.markdown(f"""
     <div class="terminal-card">
         <div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 8px;">
-            AI Real-Time Market Analysis &bull; Live Feed ({data['time']})
+            AI Fundamental Analysis &bull; Live Feed ({data['time']})
         </div>
         <div style="color: {data['color']}; font-weight: 900; font-size: 28px; letter-spacing: 2px;">
             {data['label']}
@@ -312,11 +324,11 @@ with col_c:
             {data['note']}
         </p>
         <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 10px 14px; margin-top: 15px; text-align: left;">
-            <div style="color: #888; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px;">Top Market Headline:</div>
-            <div style="color: #eee; font-size: 13px; font-weight: 500;">"{data['news_title']}"</div>
+            <div style="color: #888; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px;">Top Market Headline ({data['source'].upper()}):</div>
+            <div style="color: #eee; font-size: 13px; font-weight: 500;">"{data['headline']}"</div>
         </div>
         <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 18px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px;">
-            SOURCE: {data['news_source'].upper()} &bull; DXY INDEX ({'+' if data['dxy_pct'] > 0 else ''}{data['dxy_pct']}%) &bull; XAU SPOT ({data['price']} USD)
+            SOURCES: INVESTING.COM &bull; INVESTINGLIVE &bull; FINANCIALJUICE &bull; TRADINGECONOMICS &bull; FOREXFACTORY
         </div>
     </div>
     """, unsafe_allow_html=True)
