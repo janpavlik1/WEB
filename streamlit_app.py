@@ -131,15 +131,15 @@ def fetch_live_gold_sentiment():
     # 1. Získání reálných tržních dat (Zlato a Dolarový index)
     gold_price, gold_pct, dxy_pct = 0.0, 0.0, 0.0
     try:
-        # Data pro zlato (GC=F)
-        res_g = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=1d&range=5d", headers=headers, timeout=5).json()
+        url_gold = "https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=1d&range=5d"
+        res_g = requests.get(url_gold, headers=headers, timeout=5).json()
         meta_g = res_g['chart']['result'][0]['meta']
         gold_price = round(meta_g.get('regularMarketPrice', 0.0), 2)
         prev_close_g = meta_g.get('chartPreviousClose', gold_price)
         gold_pct = round(((gold_price - prev_close_g) / prev_close_g) * 100, 2) if prev_close_g else 0.0
 
-        # Data pro DXY (USD Index)
-        res_d = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/DX-Y.NYB?interval=1d&range=5d", headers=headers, timeout=5).json()
+        url_dxy = "https://query1.finance.yahoo.com/v8/finance/chart/DX-Y.NYB?interval=1d&range=5d"
+        res_d = requests.get(url_dxy, headers=headers, timeout=5).json()
         meta_d = res_d['chart']['result'][0]['meta']
         dxy_price = meta_d.get('regularMarketPrice', 0.0)
         prev_close_d = meta_d.get('chartPreviousClose', dxy_price)
@@ -151,4 +151,172 @@ def fetch_live_gold_sentiment():
     news_title = "Sledování klíčových hladin podpory a odporu na trhu se zlatem."
     news_source = "GLOBAL MARKET FEED"
     try:
-        feed_url = "https://news.google.com/rss/search?q=gold+price+XAUUSD+when:2d
+        feed_url = "https://news.google.com/rss/search?q=gold+price+XAUUSD&hl=en-US&gl=US&ceid=US:en"
+        feed_res = requests.get(feed_url, headers=headers, timeout=5)
+        root = ET.fromstring(feed_res.content)
+        item = root.find(".//item")
+        if item is not None:
+            raw_title = item.find("title").text
+            if " - " in raw_title:
+                parts = raw_title.rsplit(" - ", 1)
+                news_title = parts[0]
+                news_source = parts[1]
+            else:
+                news_title = raw_title
+    except Exception:
+        pass
+
+    # 3. Vyhodnocení sentimentu na základě reálných tržních sil
+    score = gold_pct - (dxy_pct * 1.5)
+    
+    if score >= 0.2:
+        sentiment_label = "BULLISH SENTIMENT"
+        sentiment_color = "#2ecc71"
+        action_note = f"Zlato posiluje ({'+' if gold_pct > 0 else ''}{gold_pct} %) a tlak na USD ({'+' if dxy_pct > 0 else ''}{dxy_pct} %) otevírá prostor pro nákupní momentum."
+    elif score <= -0.2:
+        sentiment_label = "BEARISH SENTIMENT"
+        sentiment_color = "#e74c3c"
+        action_note = f"Rostoucí výnosy a silnější dolar ({'+' if dxy_pct > 0 else ''}{dxy_pct} %) vytvářejí prodejní tlak na zlato ({'+' if gold_pct > 0 else ''}{gold_pct} %)."
+    else:
+        sentiment_label = "NEUTRAL SENTIMENT"
+        sentiment_color = "#f39c12"
+        action_note = f"Trh konsoliduje kolem klíčových úrovní. Pohyb zlata: {'+' if gold_pct > 0 else ''}{gold_pct} %, DXY: {'+' if dxy_pct > 0 else ''}{dxy_pct} %."
+
+    return {
+        "label": sentiment_label,
+        "color": sentiment_color,
+        "price": gold_price,
+        "gold_pct": gold_pct,
+        "dxy_pct": dxy_pct,
+        "note": action_note,
+        "news_title": news_title,
+        "news_source": news_source,
+        "time": datetime.now().strftime("%H:%M:%S")
+    }
+
+
+# --- 4. LOGIN LOGIKA ---
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    for _ in range(4): 
+        st.write("\n")
+    st.markdown("""
+        <div class="logo-container">
+            <div class="logo-text"><span class="j-green">J</span>T | CAPITAL</div>
+            <div class="logo-sub">TERMINAL v 1</div>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 0.7, 1])
+    with col2:
+        num = st.text_input("NUM", placeholder="PŘIHLAŠOVACÍ ČÍSLO", label_visibility="collapsed")
+        pwd = st.text_input("PWD", type="password", placeholder="HESLO", label_visibility="collapsed")
+        if st.button("PŘIHLÁSIT SE", use_container_width=True):
+            if num == "1234" and pwd == "1234":
+                st.session_state.authenticated = True
+                st.rerun()
+            else:
+                st.error("PŘÍSTUP ZAMÍTNUT")
+    st.stop()
+
+# --- 5. VNITŘEK TERMINÁLU ---
+st.markdown("""
+    <div class="logo-container">
+        <div class="logo-text" style="font-size:45px;"><span class="j-green">J</span>T | CAPITAL</div>
+        <div class="logo-sub">TERMINAL v 1</div>
+    </div>
+""", unsafe_allow_html=True)
+
+# Načtení živých tržních dat
+data = fetch_live_gold_sentiment()
+
+col_l, col_c, col_r = st.columns([0.1, 0.8, 0.1])
+
+with col_c:
+    # 1. KARTA S GRAFEM (Jediný čistý zaoblený rámeček)
+    components.html("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                html, body {
+                    margin: 0;
+                    padding: 0;
+                    background: transparent !important;
+                    overflow: hidden;
+                }
+                * {
+                    box-sizing: border-box;
+                }
+
+                .terminal-card {
+                    background-color: rgba(10, 10, 10, 0.6) !important;
+                    backdrop-filter: blur(12px) !important;
+                    -webkit-backdrop-filter: blur(12px) !important;
+                    padding: 20px 25px;
+                    border-radius: 15px !important;
+                    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+                    width: 100%;
+                    overflow: hidden !important;
+                }
+
+                .tradingview-widget-container,
+                .tradingview-widget-container > div,
+                .tradingview-widget-container iframe {
+                    background: transparent !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="terminal-card">
+                <div class="tradingview-widget-container">
+                  <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
+                  {
+                    "symbols": [ ["FX_IDC:XAUUSD|12M"] ],
+                    "chartOnly": false, 
+                    "width": "100%", 
+                    "height": "350", 
+                    "locale": "cs", 
+                    "colorTheme": "dark",
+                    "gridLineColor": "rgba(42, 46, 57, 0)", 
+                    "fontColor": "#787b86", 
+                    "isTransparent": true,
+                    "showFloatingTooltip": true, 
+                    "showVolume": false,
+                    "lineColor": "#2ecc71", 
+                    "topColor": "rgba(46, 204, 113, 0.15)", 
+                    "bottomColor": "rgba(46, 204, 113, 0)"
+                  }
+                  </script>
+                </div>
+            </div>
+        </body>
+        </html>
+    """, height=395)
+
+    # 2. KARTA SE ŽIVÝM SENTIMENTEM A AKTUÁLNÍMI DATY
+    st.markdown(f"""
+    <div class="terminal-card">
+        <div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 8px;">
+            AI Real-Time Market Analysis &bull; Live Feed ({data['time']})
+        </div>
+        <div style="color: {data['color']}; font-weight: 900; font-size: 28px; letter-spacing: 2px;">
+            {data['label']}
+        </div>
+        <p style="color: #ddd; margin-top: 12px; font-size: 15px; line-height: 1.6;">
+            {data['note']}
+        </p>
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 10px 14px; margin-top: 15px; text-align: left;">
+            <div style="color: #888; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px;">Top Market Headline:</div>
+            <div style="color: #eee; font-size: 13px; font-weight: 500;">"{data['news_title']}"</div>
+        </div>
+        <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 18px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px;">
+            SOURCE: {data['news_source'].upper()} &bull; DXY INDEX ({'+' if data['dxy_pct'] > 0 else ''}{data['dxy_pct']}%) &bull; XAU SPOT ({data['price']} USD)
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
