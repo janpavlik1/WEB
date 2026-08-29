@@ -89,7 +89,7 @@ st.markdown(f"""
     .logo-sub {{ color: #777; font-size: 10px; letter-spacing: 3px; margin-top: 5px; text-transform: uppercase; font-weight: 600; }}
     .j-green {{ color: #2ecc71 !important; }}
 
-    /* 4. TLAČÍTKA BEZ EMOJI */
+    /* 4. TLAČÍTKA */
     div.stButton > button {{
         background-color: #2ecc71 !important;
         color: white !important;
@@ -311,7 +311,7 @@ def fetch_finnhub_news():
     except Exception:
         pass
 
-    # 2. Záložní proud (Google / Institutional Wire), pokud Finnhub limituje
+    # 2. Záložní proud (Google / Institutional Wire)
     if not news_items:
         try:
             url_feed = "https://news.google.com/rss/search?q=forex+dollar+gold+fed+markets&hl=en-US&gl=US&ceid=US:en"
@@ -350,7 +350,7 @@ def fetch_finnhub_news():
     }
 
 
-# --- 6. LOGIN LOGIKA (JEDNOTNÝ A MENŠÍ DESIGN) ---
+# --- 6. LOGIN LOGIKA ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -709,8 +709,8 @@ with col_c:
     )
     st.markdown(full_fj_html, unsafe_allow_html=True)
     
-    # Tlačítko bez emoji
-    if st.button("AKTUALIZOVAT FINANCIALJUICE", key="btn_refresh_fj", use_container_width=True):
+    # Tlačítko 1: AKTUALIZOVAT LIVE FEED
+    if st.button("AKTUALIZOVAT LIVE FEED", key="btn_refresh_fj", use_container_width=True):
         fetch_financialjuice_highlights.clear()
         st.rerun()
 
@@ -764,7 +764,7 @@ with col_c:
     )
     st.markdown(full_fh_html, unsafe_allow_html=True)
 
-    # Tlačítko bez emoji
-    if st.button("AKTUALIZOVAT FINNHUB ZPRÁVY", key="btn_refresh_fh", use_container_width=True):
+    # Tlačítko 2: AKTUALIZOVAT FUNDAMENTÁLNÍ ZPRÁVY
+    if st.button("AKTUALIZOVAT FUNDAMENTÁLNÍ ZPRÁVY", key="btn_refresh_fh", use_container_width=True):
         fetch_finnhub_news.clear()
         st.rerun()
