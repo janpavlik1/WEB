@@ -8,35 +8,26 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. TOTÁLNÍ STYLING (Obrázek + Fix Rámečků) ---
-# Používám jiný, velmi stabilní odkaz na tmavý trading obrázek
+# --- 2. TOTÁLNÍ STYLING (Vynucený design a oprava Safari rámečků) ---
 BG_IMAGE = "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80&w=2070"
 
 st.markdown(f"""
     <style>
-    /* 1. Vynucení obrázku na pozadí úplně všude */
+    /* Pozadí a vrstvy */
     html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{
         background: url("{BG_IMAGE}") no-repeat center center fixed !important;
         background-size: cover !important;
     }}
-
-    /* 2. Ztmavení obrázku, aby byl text čitelný (Overlay) */
     [data-testid="stAppViewContainer"]::before {{
-        content: "";
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background-color: rgba(0, 0, 0, 0.85); /* Ztmavení o 85% */
-        z-index: -1;
+        content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(0, 0, 0, 0.88); z-index: -1;
     }}
-
-    /* 3. Odstranění všech bílých/šedých ploch Streamlitu */
     [data-testid="stMainBlockContainer"], [data-testid="stVerticalBlock"], 
     [data-testid="stVerticalBlockBorderWrapper"], .stApp {{
         background-color: transparent !important;
-        background: transparent !important;
     }}
-    
-    /* 4. DEFINITIVNÍ STOP ČERVENÝM RÁMEČKŮM (i na Mac/Safari) */
+
+    /* --- STOP ČERVENÝM RÁMEČKŮM (Nukleární reset) --- */
     input {{
         outline: none !important;
         box-shadow: none !important;
@@ -44,34 +35,29 @@ st.markdown(f"""
         -webkit-appearance: none !important;
     }}
     
-    /* Kontejner vstupu */
-    div[data-baseweb="input"] {{
+    /* Cílení na všechny možné stavy obalového divu */
+    div[data-baseweb="input"], div[data-baseweb="input"] > div {{
         border: 1px solid #333 !important;
-        background-color: rgba(10, 10, 10, 0.9) !important;
+        background-color: rgba(10, 10, 10, 0.95) !important;
         border-radius: 6px !important;
-        transition: 0.3s;
-    }}
-    
-    /* Změna na zelenou při kliku - ŽÁDNÁ JINÁ BARVA */
-    div[data-baseweb="input"]:focus-within {{
-        border: 1px solid #2ecc71 !important;
-        box-shadow: 0 0 10px rgba(46, 204, 113, 0.2) !important;
+        box-shadow: none !important;
     }}
 
-    /* 5. BRANDING */
+    /* Pouze zelená při aktivaci, žádná jiná barva nesmí projít */
+    div[data-baseweb="input"]:focus-within, div[data-baseweb="input"]:active, div[data-baseweb="input"]:hover {{
+        border: 1px solid #2ecc71 !important;
+        box-shadow: 0 0 10px rgba(46, 204, 113, 0.1) !important;
+    }}
+
+    /* Branding */
     .logo-container {{ text-align: center; margin-top: 20px; margin-bottom: 30px; }}
     .logo-text {{ font-family: 'Inter', sans-serif; font-weight: 800; font-size: 65px; letter-spacing: -3px; color: white; }}
     .j-green {{ color: #2ecc71 !important; }}
 
-    /* Centrování textu v políčkách */
-    input {{
-        text-align: center !important;
-        color: white !important;
-        font-size: 16px !important;
-        height: 55px !important;
-    }}
+    /* Centrování textu */
+    input {{ text-align: center !important; color: white !important; font-size: 16px !important; height: 55px !important; }}
     
-    /* TLAČÍTKO */
+    /* Tlačítko */
     div.stButton > button {{
         background-color: #2ecc71 !important;
         color: white !important;
@@ -83,15 +69,17 @@ st.markdown(f"""
         border-radius: 6px !important;
     }}
 
-    /* SENTIMENT CARD */
-    .sentiment-card {{
-        background-color: rgba(10, 10, 10, 0.9);
-        padding: 30px;
+    /* DESIGN KARET (Pro Graf i Sentiment) */
+    .terminal-card {{
+        background-color: rgba(10, 10, 10, 0.85); /* Mírná průhlednost */
+        padding: 25px;
         border-radius: 15px;
         border: 1px solid #222;
-        text-align: center;
         margin-top: 20px;
+        backdrop-filter: blur(5px); /* Efekt skla */
     }}
+
+    .sentiment-bullish {{ color: #2ecc71; font-weight: 900; font-size: 28px; letter-spacing: 2px; text-align: center; }}
 
     footer, header, #MainMenu, [data-testid="stSidebar"], [data-testid="InputInstructions"] {{ visibility: hidden; }}
     </style>
@@ -104,7 +92,6 @@ if "authenticated" not in st.session_state:
 if not st.session_state.authenticated:
     for _ in range(8): st.write("\n")
     st.markdown('<div class="logo-container"><div class="logo-text"><span class="j-green">J</span>T | CAPITAL</div></div>', unsafe_allow_html=True)
-    
     col1, col2, col3 = st.columns([1, 0.7, 1])
     with col2:
         num = st.text_input("NUM", placeholder="PŘIHLAŠOVACÍ ČÍSLO", label_visibility="collapsed")
@@ -117,7 +104,7 @@ if not st.session_state.authenticated:
                 st.error("PŘÍSTUP ZAMÍTNUT")
     st.stop()
 
-# --- 4. VNITŘEK TERMINÁLU ---
+# --- 4. VNITŘEK TERMINÁLU (Dashboard) ---
 
 # Logo na střed
 st.markdown('<div class="logo-container"><div class="logo-text" style="font-size:45px;"><span class="j-green">J</span>T | CAPITAL</div></div>', unsafe_allow_html=True)
@@ -125,7 +112,8 @@ st.markdown('<div class="logo-container"><div class="logo-text" style="font-size
 col_l, col_c, col_r = st.columns([0.1, 0.8, 0.1])
 
 with col_c:
-    # 1. ŽIVÁ DATA XAUUSD
+    # 1. KARTA S GRAFEM (XAUUSD)
+    st.markdown('<div class="terminal-card">', unsafe_allow_html=True)
     components.html("""
         <div class="tradingview-widget-container">
           <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
@@ -139,17 +127,18 @@ with col_c:
           </script>
         </div>
     """, height=360)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    # 2. AI MARKET SENTIMENT BOX
+    # 2. KARTA SE SENTIMENTEM
     st.markdown("""
-    <div class="sentiment-card">
-        <div style="color: #666; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 10px;">AI Analysis System</div>
-        <div style="color: #2ecc71; font-weight: 900; font-size: 28px; letter-spacing: 2px;">BULLISH SENTIMENT</div>
-        <p style="color: #999; margin-top: 15px; font-size: 16px; line-height: 1.6;">
+    <div class="terminal-card">
+        <div style="color: #666; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 10px; text-align: center;">AI Analysis System</div>
+        <div class="sentiment-bullish">BULLISH SENTIMENT</div>
+        <p style="color: #999; margin-top: 15px; font-size: 16px; line-height: 1.6; text-align: center;">
             Zlato testuje denní rezistenci. Fundamentální data naznačují oslabování dolaru (DXY). 
             Sledujte možnost bullish breakoutu nad aktuální hladinu.
         </p>
-        <div style="border-top: 1px solid #222; margin-top: 20px; padding-top: 10px; color: #444; font-size: 10px;">
+        <div style="border-top: 1px solid #222; margin-top: 20px; padding-top: 10px; color: #444; font-size: 10px; text-align: center;">
             SOURCE: REAL-TIME REUTERS FEED | AI ENGINE v1.2
         </div>
     </div>
