@@ -63,24 +63,26 @@ st.markdown("""
         border: 1px solid #2ecc71 !important;
     }
     
-    /* TLAČÍTKO */
-    .stButton>button {
+    /* --- ZELENÉ TLAČÍTKO --- */
+    div.stButton > button {
         background-color: #2ecc71 !important;
         color: white !important;
-        border-radius: 5px !important;
-        width: 100% !important;
-        font-weight: bold !important;
-        height: 50px !important;
         border: none !important;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        box-shadow: 0 4px 15px rgba(46, 204, 113, 0.2);
-        transition: 0.3s;
+        height: 55px !important;
+        width: 100% !important;
+        border-radius: 6px !important;
+        font-weight: 800 !important;
+        font-size: 16px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 1px !important;
+        margin-top: 10px;
+        transition: 0.3s !important;
     }
-    .stButton>button:hover {
+
+    div.stButton > button:hover {
         background-color: #27ae60 !important;
-        box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
-    }
+        transform: scale(1.01);
+        box-shadow: 0 0 20px rgba(46, 204, 113, 0.3) !important;
 
     /* Skrytí menu */
     #MainMenu {visibility: hidden;}
