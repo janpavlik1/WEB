@@ -4,22 +4,21 @@ import streamlit.components.v1 as components
 # --- 1. KONFIGURACE ---
 st.set_page_config(
     page_title="JT | CAPITAL",
-    page_icon="📈",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. DESIGN A CSS (Nuclear Transparent Style) ---
+# --- 2. KOMPLEXNÍ DESIGN (CSS) ---
 st.markdown("""
     <style>
-    /* Totální vyčištění pozadí */
+    /* Odstranění pozadí Streamlitu */
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stMainBlockContainer"], 
     [data-testid="stVerticalBlock"], [data-testid="stVerticalBlockBorderWrapper"], .stApp {
         background: transparent !important;
         background-color: transparent !important;
     }
     
-    /* Skrytí postranního menu a nápovědy */
+    /* Skrytí sidebaru a nápovědy */
     [data-testid="stSidebar"] { display: none !important; }
     [data-testid="InputInstructions"] { display: none !important; }
     
@@ -31,9 +30,9 @@ st.markdown("""
     .logo-container { text-align: center; margin-top: 20px; margin-bottom: 5px; }
     .logo-text { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 60px; letter-spacing: -2px; color: white; }
     .j-green { color: #2ecc71 !important; }
-    .version-tag { color: #444; letter-spacing: 3px; font-size: 10px; margin-top: -10px; margin-bottom: 20px; }
+    .version-tag { color: #444; letter-spacing: 3px; font-size: 10px; margin-top: -10px; margin-bottom: 20px; text-align: center; }
     
-    /* Inputy - Centrování textu a zelený focus */
+    /* Vstupy Login - Centrování textu */
     .stTextInput>div>div>input {
         background-color: rgba(25, 25, 25, 0.9) !important;
         color: white !important;
@@ -44,21 +43,38 @@ st.markdown("""
     }
     .stTextInput>div>div:focus-within { border-color: #2ecc71 !important; box-shadow: none !important; }
 
-    /* Navigační tlačítka v řadě */
+    /* ŠEDÝ NAVIGAČNÍ PANEL */
+    .nav-bar {
+        background-color: #1a1a1a;
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #333;
+        margin-bottom: 20px;
+    }
+
+    /* Styl tlačítek v menu (Menší obdélníky) */
     div.stButton > button {
         background-color: #2ecc71 !important;
         color: white !important;
         border: none !important;
-        height: 50px !important;
+        height: 45px !important;
         width: 100% !important;
-        border-radius: 6px !important;
-        font-weight: 800 !important;
+        border-radius: 4px !important;
+        font-weight: 700 !important;
         text-transform: uppercase !important;
         transition: 0.3s;
     }
-    div.stButton > button:hover { background-color: #27ae60 !important; transform: scale(1.02); }
+    div.stButton > button:hover { background-color: #27ae60 !important; }
 
-    /* Skrytí zbytečností */
+    /* Speciální styl pro ODHLÁSIT SE (Červené okénko) */
+    .logout-btn > div > button {
+        background-color: #e74c3c !important;
+        color: white !important;
+    }
+    .logout-btn > div > button:hover {
+        background-color: #c0392b !important;
+    }
+
     footer, header, #MainMenu { visibility: hidden; }
     </style>
 
@@ -93,7 +109,7 @@ st.markdown("""
     </script>
     """, unsafe_allow_html=True)
 
-# --- 3. SESSION STATE (Navigace a Login) ---
+# --- 3. SESSION STATE ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 if "current_page" not in st.session_state:
@@ -106,41 +122,46 @@ if not st.session_state.authenticated:
     
     col1, col2, col3 = st.columns([1, 0.7, 1])
     with col2:
-        num = st.text_input("NUMBER", placeholder="PŘIHLAŠOVACÍ ČÍSLO", label_visibility="collapsed")
+        num = st.text_input("NUMBER", placeholder="PRIHLASOVACI CISLO", label_visibility="collapsed")
         pwd = st.text_input("PASSWORD", type="password", placeholder="HESLO", label_visibility="collapsed")
-        if st.button("PŘIHLÁSIT SE"):
+        if st.button("PRIHLASIT SE", use_container_width=True):
             if num == "1234" and pwd == "1234":
                 st.session_state.authenticated = True
                 st.rerun()
             else:
-                st.error("PŘÍSTUP ZAMÍTNUT")
+                st.error("PRISTUP ZAMITNUT")
     st.stop()
 
-# --- 5. VNITŘEK APLIKACE (Po přihlášení) ---
+# --- 5. DASHBOARD (Po přihlášení) ---
 
 # Horní Logo
 st.markdown('<div class="logo-container"><div class="logo-text" style="font-size:45px;"><span class="j-green">J</span>T | CAPITAL</div></div>', unsafe_allow_html=True)
 
-# NAVIGAČNÍ MENU - 3 tlačítka vedle sebe
-m1, m2, m3, m4 = st.columns([1, 1, 1, 0.3])
+# ŠEDÝ NAVIGAČNÍ PANEL S TLAČÍTKY
+st.markdown('<div class="nav-bar">', unsafe_allow_html=True)
+m1, m2, m3, m4 = st.columns([1, 1, 1, 1])
 with m1:
-    if st.button("🏛 OVERVIEW"): st.session_state.current_page = "OVERVIEW"; st.rerun()
+    if st.button("OVERVIEW"): st.session_state.current_page = "OVERVIEW"; st.rerun()
 with m2:
-    if st.button("📅 KALENDÁŘ"): st.session_state.current_page = "KALENDAR"; st.rerun()
+    if st.button("KALENDAR"): st.session_state.current_page = "KALENDAR"; st.rerun()
 with m3:
-    if st.button("🧠 FEED"): st.session_state.current_page = "FEED"; st.rerun()
+    if st.button("FEED"): st.session_state.current_page = "FEED"; st.rerun()
 with m4:
-    if st.button("❌"): st.session_state.authenticated = False; st.rerun()
-
-st.markdown("---")
+    # Červené tlačítko pro odhlášení
+    st.markdown('<div class="logout-btn">', unsafe_allow_html=True)
+    if st.button("ODHLASIT SE"): st.session_state.authenticated = False; st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
 # --- LOGIKA OBSAHU ---
 
 if st.session_state.current_page == "OVERVIEW":
+    st.subheader("MARKET OVERVIEW")
+    
     # Live Ticker Tape
     components.html("""
         <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-        { "symbols": [ {"proName": "FX_IDC:XAUUSD", "description": "Zlato"}, {"proName": "NASDAQ:NAS100", "description": "Nasdaq"}, {"proName": "CURRENCYCOM:DJ30", "description": "Dow Jones"} ], "colorTheme": "dark", "isTransparent": true, "displayMode": "adaptive", "locale": "cs" }
+        { "symbols": [ {"proName": "FX_IDC:XAUUSD", "description": "GOLD"}, {"proName": "NASDAQ:NAS100", "description": "NASDAQ"}, {"proName": "CURRENCYCOM:DJ30", "description": "DOW JONES"} ], "colorTheme": "dark", "isTransparent": true, "displayMode": "adaptive", "locale": "cs" }
         </script>
     """, height=50)
 
@@ -150,9 +171,10 @@ if st.session_state.current_page == "OVERVIEW":
     with c2: components.html("""<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>{ "symbol": "NASDAQ:NAS100", "width": "100%", "height": "220", "locale": "cs", "dateRange": "12M", "colorTheme": "dark", "trendLineColor": "#2ecc71", "underLineColor": "rgba(46, 204, 113, 0.15)", "isTransparent": true }</script>""", height=230)
     with c3: components.html("""<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>{ "symbol": "CURRENCYCOM:DJ30", "width": "100%", "height": "220", "locale": "cs", "dateRange": "12M", "colorTheme": "dark", "trendLineColor": "#2ecc71", "underLineColor": "rgba(46, 204, 113, 0.15)", "isTransparent": true }</script>""", height=230)
 
-    st.markdown('<div style="background-color:rgba(30,30,30,0.6); padding:20px; border-radius:10px; border-left:4px solid #2ecc71;"><h4>Market Sentiment</h4><p>Zlato testuje support. Indexy vyčkávají na americkou seanci.</p></div>', unsafe_allow_html=True)
+    st.markdown('<div style="background-color:rgba(25,25,25,0.8); padding:20px; border-radius:10px; border-left:4px solid #2ecc71;"><h4>MARKET SENTIMENT</h4><p>GOLD TESTUJE SUPPORT. INDEXY VYCRAVAJI NA NY SESSION.</p></div>', unsafe_allow_html=True)
 
 elif st.session_state.current_page == "KALENDAR":
+    st.subheader("EKONOMICKY KALENDAR")
     components.html("""
         <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>
         { "colorTheme": "dark", "isTransparent": true, "width": "100%", "height": "600", "locale": "cs", "importanceFilter": "-1,0,1" }
@@ -160,7 +182,7 @@ elif st.session_state.current_page == "KALENDAR":
     """, height=600)
 
 elif st.session_state.current_page == "FEED":
-    st.subheader("🧠 JT | CAPITAL Fundamental Feed")
-    st.info("Zde budou vaše denní analýzy.")
+    st.subheader("FUNDAMENTAL FEED")
+    st.info("ZDE BUDOU PUBLIKOVANY DENNI ANALYZY.")
     st.markdown("---")
-    st.write("Sledujte dnešní FOMC. Očekáváme volatilitu na indexech.")
+    st.write("SLEDUJEME AKTUALNI POHYBY NA TRHU.")
