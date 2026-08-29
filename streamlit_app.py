@@ -42,7 +42,7 @@ st.markdown(f"""
         border: none !important;
     }}
     
-    /* 2. PŘIHLAŠOVACÍ POLE */
+    /* 2. PŘIHLAŠOVACÍ POLE - JEDNOTNÁ VELIKOST */
     [data-testid="stTextInput"] > div,
     [data-testid="stTextInput"] > div > div,
     div[data-baseweb="input"],
@@ -72,8 +72,9 @@ st.markdown(f"""
     input, input:invalid, input:required, input:focus {{
         text-align: center !important;
         color: white !important;
-        font-size: 16px !important;
-        height: 52px !important;
+        font-size: 14px !important;
+        letter-spacing: 1px !important;
+        height: 44px !important;
         background: transparent !important;
         border: none !important;
         outline: none !important;
@@ -83,18 +84,21 @@ st.markdown(f"""
 
     /* 3. BRANDING */
     .logo-container {{ text-align: center; margin-top: 10px; margin-bottom: 15px; }}
-    .logo-text {{ font-family: 'Inter', sans-serif; font-weight: 800; font-size: 60px; letter-spacing: -3px; color: white; line-height: 1.1; }}
-    .logo-sub {{ color: #777; font-size: 11px; letter-spacing: 4px; margin-top: 6px; text-transform: uppercase; font-weight: 600; }}
+    .logo-text-intro {{ font-family: 'Inter', sans-serif; font-weight: 800; font-size: 42px; letter-spacing: -2px; color: white; line-height: 1.1; }}
+    .logo-text-main {{ font-family: 'Inter', sans-serif; font-weight: 800; font-size: 38px; letter-spacing: -1.5px; color: white; line-height: 1.1; }}
+    .logo-sub {{ color: #777; font-size: 10px; letter-spacing: 3px; margin-top: 5px; text-transform: uppercase; font-weight: 600; }}
     .j-green {{ color: #2ecc71 !important; }}
 
-    /* 4. TLAČÍTKA */
+    /* 4. TLAČÍTKA BEZ EMOJI */
     div.stButton > button {{
         background-color: #2ecc71 !important;
         color: white !important;
         border: none !important;
-        height: 48px !important;
+        height: 44px !important;
         width: 100% !important;
+        font-size: 13px !important;
         font-weight: 800 !important;
+        letter-spacing: 1px !important;
         text-transform: uppercase !important;
         border-radius: 8px !important;
         cursor: pointer !important;
@@ -110,7 +114,7 @@ st.markdown(f"""
         background-color: rgba(10, 10, 10, 0.6) !important;
         backdrop-filter: blur(12px) !important;
         -webkit-backdrop-filter: blur(12px) !important;
-        padding: 25px;
+        padding: 22px;
         border-radius: 15px;
         border: 1px solid rgba(255, 255, 255, 0.08);
         text-align: center;
@@ -123,13 +127,11 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 
-# --- 3. SPOLEHLIVÝ PŘEKLADOVÝ ENGINE (MYMEMORY) ---
+# --- 3. PŘEKLADOVÝ ENGINE (MYMEMORY) ---
 def translate_with_mymemory(text):
     if not text:
         return ""
     clean_txt = text.strip()
-    
-    # 1. MyMemory API
     try:
         url = "https://api.mymemory.translated.net/get"
         params = {
@@ -146,7 +148,6 @@ def translate_with_mymemory(text):
     except Exception:
         pass
 
-    # 2. Záložní přímý překladový kanál
     try:
         url_fb = "https://translate.googleapis.com/translate_a/single"
         params_fb = {
@@ -281,44 +282,75 @@ def fetch_financialjuice_highlights():
         return default_data
 
 
-# --- 5. ZDROJ 2: FINNHUB (VŠECHNY AKTUÁLNÍ FUNDAMENTÁLNÍ ZPRÁVY) ---
-@st.cache_data(ttl=180)
+# --- 5. ZDROJ 2: FINNHUB (GLOBÁLNÍ INSTITUCIONÁLNÍ ZPRÁVY) ---
+@st.cache_data(ttl=120)
 def fetch_finnhub_news():
-    default_news = [
-        {"cz": "Trh s drahými kovy sleduje měnovou politiku centrálních bank a výnosy dluhopisů.", "orig": "Precious metals market tracks central bank policies and treasury yields.", "source": "FINNHUB", "time": "Live"},
-        {"cz": "Dolarový index reaguje na nová makroekonomická data z amerického trhu práce.", "orig": "Dollar index reacts to fresh macroeconomic data from US labor market.", "source": "REUTERS", "time": "Live"},
-        {"cz": "Investoři vyhodnocují globální inflační tlaky a jejich dopad na komodity.", "orig": "Investors assess global inflationary pressures and impact on commodities.", "source": "BLOOMBERG", "time": "Live"},
-        {"cz": "Poptávka po fyzickém zlatě zůstává podpořena nákupy centrálních bank.", "orig": "Physical gold demand remains supported by central bank reserves buying.", "source": "WGC", "time": "Live"}
-    ]
+    news_items = []
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    
+    # 1. Pokus o Finnhub API
     try:
-        headers = {"User-Agent": "Mozilla/5.0"}
         url = "https://finnhub.io/api/v1/news?category=forex&token=c8j8tgaad3i9g3a5o820"
         res = requests.get(url, headers=headers, timeout=4)
         if res.status_code == 200:
             items = res.json()
             if isinstance(items, list) and len(items) > 0:
-                parsed = []
                 for item in items[:6]:
                     head = item.get("headline", "").strip()
                     src = item.get("source", "FINNHUB").upper()
                     dt = item.get("datetime", 0)
-                    t_str = datetime.fromtimestamp(dt).strftime("%H:%M") if dt else "Live"
+                    t_str = datetime.fromtimestamp(dt).strftime("%H:%M") if dt else datetime.now().strftime("%H:%M")
                     if head:
                         cz_head = translate_with_mymemory(head)
-                        parsed.append({
+                        news_items.append({
                             "cz": cz_head,
                             "orig": head,
                             "source": src,
                             "time": t_str
                         })
-                if parsed:
-                    return parsed
     except Exception:
         pass
-    return default_news
+
+    # 2. Záložní proud (Google / Institutional Wire), pokud Finnhub limituje
+    if not news_items:
+        try:
+            url_feed = "https://news.google.com/rss/search?q=forex+dollar+gold+fed+markets&hl=en-US&gl=US&ceid=US:en"
+            res_f = requests.get(url_feed, headers=headers, timeout=4)
+            if res_f.status_code == 200:
+                root = ET.fromstring(res_f.content)
+                for item in root.findall(".//item")[:5]:
+                    title_elem = item.find("title")
+                    if title_elem is not None and title_elem.text:
+                        raw_t = title_elem.text.strip()
+                        src_name = "MARKET WIRE"
+                        if " - " in raw_t:
+                            parts = raw_t.rsplit(" - ", 1)
+                            raw_t = parts[0].strip()
+                            src_name = parts[1].strip().upper()
+                        cz_t = translate_with_mymemory(raw_t)
+                        news_items.append({
+                            "cz": cz_t,
+                            "orig": raw_t,
+                            "source": src_name,
+                            "time": datetime.now().strftime("%H:%M")
+                        })
+        except Exception:
+            pass
+
+    if not news_items:
+        news_items = [
+            {"cz": "Trh s drahými kovy sleduje měnovou politiku centrálních bank a výnosy dluhopisů.", "orig": "Precious metals market tracks central bank policies and treasury yields.", "source": "FINNHUB", "time": datetime.now().strftime("%H:%M")},
+            {"cz": "Dolarový index reaguje na nová makroekonomická data z amerického trhu práce.", "orig": "Dollar index reacts to fresh macroeconomic data from US labor market.", "source": "REUTERS", "time": datetime.now().strftime("%H:%M")},
+            {"cz": "Investoři vyhodnocují globální inflační tlaky a jejich dopad na komodity.", "orig": "Investors assess global inflationary pressures and impact on commodities.", "source": "BLOOMBERG", "time": datetime.now().strftime("%H:%M")}
+        ]
+
+    return {
+        "items": news_items,
+        "time": datetime.now().strftime("%H:%M:%S")
+    }
 
 
-# --- 6. LOGIN LOGIKA ---
+# --- 6. LOGIN LOGIKA (JEDNOTNÝ A MENŠÍ DESIGN) ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -327,12 +359,12 @@ if not st.session_state.authenticated:
         st.write("\n")
     st.markdown("""
         <div class="logo-container">
-            <div class="logo-text"><span class="j-green">J</span>T | CAPITAL</div>
+            <div class="logo-text-intro"><span class="j-green">J</span>T | CAPITAL</div>
             <div class="logo-sub">TERMINAL v 1</div>
         </div>
     """, unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns([1, 0.7, 1])
+    col1, col2, col3 = st.columns([1, 0.6, 1])
     with col2:
         num = st.text_input("NUM", placeholder="PŘIHLAŠOVACÍ ČÍSLO", label_visibility="collapsed")
         pwd = st.text_input("PWD", type="password", placeholder="HESLO", label_visibility="collapsed")
@@ -348,7 +380,7 @@ if not st.session_state.authenticated:
 # --- 7. VNITŘEK TERMINÁLU ---
 st.markdown("""
     <div class="logo-container">
-        <div class="logo-text" style="font-size:45px;"><span class="j-green">J</span>T | CAPITAL</div>
+        <div class="logo-text-main"><span class="j-green">J</span>T | CAPITAL</div>
         <div class="logo-sub">TERMINAL v 1</div>
     </div>
 """, unsafe_allow_html=True)
@@ -677,13 +709,15 @@ with col_c:
     )
     st.markdown(full_fj_html, unsafe_allow_html=True)
     
-    # Tlačítko pro manuální aktualizaci FinancialJuice
-    if st.button("🔄 AKTUALIZOVAT FINANCIALJUICE", key="btn_refresh_fj", use_container_width=True):
+    # Tlačítko bez emoji
+    if st.button("AKTUALIZOVAT FINANCIALJUICE", key="btn_refresh_fj", use_container_width=True):
         fetch_financialjuice_highlights.clear()
         st.rerun()
 
-    # --- 4. KARTA: FINNHUB (VŠECHNY AKTUÁLNÍ ZPRÁVY) ---
-    finnhub_items = fetch_finnhub_news()
+    # --- 4. KARTA: FINNHUB (GLOBÁLNÍ ZPRÁVY) ---
+    finnhub_data = fetch_finnhub_news()
+    finnhub_items = finnhub_data.get("items", [])
+    fh_time = finnhub_data.get("time", "")
     
     fh_boxes = []
     for item in finnhub_items:
@@ -714,7 +748,7 @@ with col_c:
     full_fh_html = (
         f'<div class="terminal-card">'
         f'<div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 8px;">'
-        f'Global Market News Wire &bull; Live Institutional Feed'
+        f'Global Market News Wire &bull; Live Feed ({fh_time})'
         f'</div>'
         f'<div style="color: #ffffff; font-weight: 800; font-size: 22px; letter-spacing: 1px; margin-bottom: 6px;">'
         f'AKTUÁLNÍ FUNDAMENTÁLNÍ ZPRÁVY'
@@ -730,7 +764,7 @@ with col_c:
     )
     st.markdown(full_fh_html, unsafe_allow_html=True)
 
-    # Tlačítko pro manuální aktualizaci Finnhub
-    if st.button("🔄 AKTUALIZOVAT FINNHUB ZPRÁVY", key="btn_refresh_fh", use_container_width=True):
+    # Tlačítko bez emoji
+    if st.button("AKTUALIZOVAT FINNHUB ZPRÁVY", key="btn_refresh_fh", use_container_width=True):
         fetch_finnhub_news.clear()
         st.rerun()
