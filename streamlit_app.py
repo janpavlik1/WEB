@@ -36,10 +36,10 @@ ASSETS = [
     },
     {
         "id": "dow",
-        "name": "Dow Jones (US30)",
+        "name": "Dow Jones (DJ30)",
         "broker": "VANTAGE",
-        "tv_symbol": "VANTAGE:US30|1D",
-        "keywords": ["dow", "dji", "dow jones", "industrial", "blue chip", "banking", "cyclical", "economy"],
+        "tv_symbol": "VANTAGE:DJ30|1D",
+        "keywords": ["dow", "dji", "dj30", "dow jones", "industrial", "blue chip", "banking", "cyclical", "economy"],
         "note_bull": "Tradiční průmyslové a hodnotové tituly Dow Jones posilují v očekávání stabilního růstu ekonomiky.",
         "note_bear": "Zhoršený výhled průmyslového sektoru a bankovních titulů způsobuje tlak na pokles indexu Dow Jones.",
         "note_neutral": "Index Dow Jones se pohybuje v neutrální zóně a vstřebává firemní výsledky."
@@ -256,7 +256,7 @@ def fetch_asset_sentiment(asset_id):
 
         if len(raw_items) < 3:
             try:
-                query_term = "gold+price+XAUUSD" if asset_id == "gold" else ("nasdaq+100+stocks" if asset_id == "nasdaq" else "dow+jones+industrial")
+                query_term = "gold+price+XAUUSD" if asset_id == "gold" else ("nasdaq+100+stocks" if asset_id == "nasdaq" else "dow+jones+industrial+dj30")
                 fb_url = f"https://news.google.com/rss/search?q={query_term}+fed+rates&hl=en-US&gl=US&ceid=US:en"
                 res_fb = requests.get(fb_url, headers=headers, timeout=4)
                 if res_fb.status_code == 200:
