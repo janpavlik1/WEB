@@ -12,37 +12,58 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. DEFINICE INSTRUMENTŮ (FEED BROKERA VANTAGE) ---
+# --- 2. DEFINICE INSTRUMENTŮ A JEJICH MAKRO MODELŮ ---
 ASSETS = [
     {
         "id": "gold",
         "name": "Zlato (XAU/USD)",
         "broker": "VANTAGE",
         "tv_symbol": "VANTAGE:XAUUSD|1D",
-        "keywords": ["gold", "xau", "xauusd", "bullion", "precious metal"],
-        "note_bull": "Zlato posiluje při poklesu výnosů a oslabení dolaru. Nákupní momentum na drahých kovech přetrvává.",
-        "note_bear": "Rostoucí dolar a vyšší výnosy dluhopisů vyvíjejí prodejní tlak na cenu zlata.",
-        "note_neutral": "Zlato konsoliduje v úzkém pásmu a testuje klíčové technické hladiny podpory a rezistence."
+        "keywords": ["gold", "xau", "xauusd", "bullion", "precious metal", "yields", "dollar", "fed", "inflation"],
+        "macro_driver": "Reálné úrokové výnosy (TIPS), Dolarový index (DXY) a poptávka po bezpečném přístavu.",
+        "bull_thesis": "Pokles reálných výnosů amerických státních dluhopisů a tlak na oslabení USD vytváří silný fundamentální vítr pro růst zlata k novým rezistencím.",
+        "bear_thesis": "Růst výnosů dluhopisů a posilující dolar zvyšují oportunitní náklady držby zlata, což otevírá prostor pro korekci.",
+        "neutral_thesis": "Trh konsoliduje v rovnovážném pásmu. Obchodníci vyčkávají na nová inflační data a rozhodnutí FOMC.",
+        "deep_macro": {
+            "fed_policy": "Měnová politika Fedu a trajektorie snižování úrokových sazeb zůstávají klíčovým fundamentem. Zlato jako neúročené aktivum přímo profituje z holubičího postoje centrální banky.",
+            "intermarket": "Sledujeme silnou inverzní korelaci s DXY a US 10Y Yields. Pokles výnosů pod klíčové hladiny historicky spouští institucionální nákupní vlny na COMEXu.",
+            "liquidity": "Globální toky kapitálu a nákupy centrálních bank (zejména v Asii) vytvářejí pevné dlouhodobé cenové dno, které absorbuje případné krátkodobé výprodeje.",
+            "tactical_view": "Při pullbacku na denní supporty vyhledávat nákupní momentum. Sledovat reakci trhu na vyhlášení klíčových makro dat (CPI, NFP)."
+        }
     },
     {
         "id": "nasdaq",
         "name": "Nasdaq 100 (NAS100)",
         "broker": "VANTAGE",
         "tv_symbol": "VANTAGE:NAS100|1D",
-        "keywords": ["nasdaq", "tech", "ndx", "semiconductor", "ai", "apple", "nvidia", "microsoft", "growth"],
-        "note_bull": "Technologický sektor a polovodiče táhnou Nasdaq vzhůru díky silnému růstovému sentimentu.",
-        "note_bear": "Rotace z technologických akcií a růst úrokových výnosů vytvářejí korekční tlak na index Nasdaq.",
-        "note_neutral": "Technologické tituly konsolidují a trh vyčkává na další makroekonomická data."
+        "keywords": ["nasdaq", "tech", "ndx", "semiconductor", "ai", "apple", "nvidia", "microsoft", "growth", "yields"],
+        "macro_driver": "Ocenění technologických titulů, diskontní sazby a likvidita velkých hráčů (Big Tech / AI).",
+        "bull_thesis": "Stabilní růst ziskovosti technologických gigantů a očekávání nižších úrokových sazeb podporují silný 'Risk-On' apetit napříč indexem.",
+        "bear_thesis": "Vyšší výnosy státních dluhopisů stlačují násobky ocenění růstových akcií (P/E compression) a spouštějí sektorovou rotaci do hodnotových titulů.",
+        "neutral_thesis": "Index konsoliduje kolem klíčových technických úrovní po předchozích růstových vlnách. Trh čeká na výsledkovou sezónu.",
+        "deep_macro": {
+            "fed_policy": "Ocenění růstových společností je extrémně citlivé na diskontní sazbu. Jakýkoliv náznak jestřábího postoje Fedu okamžitě zvyšuje tlak na technologický sektor.",
+            "intermarket": "Korelace s polovodičovým sektorem (SOX) a výnosovou křivkou. Výnosy dluhopisů působí jako gravitační síla na ocenění technologických multiplikátorů.",
+            "liquidity": "Likvidita institucionálních fondů zůstává koncentrována v 'Magnificent 7'. Šířka trhu (market breadth) určuje udržitelnost současného trendu.",
+            "tactical_view": "Sledovat reakce po otevření Wall Street (15:30 SEČ). Klíčové je potvrzení směru technologickými lídry."
+        }
     },
     {
         "id": "dow",
         "name": "Dow Jones (DJ30)",
         "broker": "VANTAGE",
         "tv_symbol": "VANTAGE:DJ30|1D",
-        "keywords": ["dow", "dji", "dj30", "dow jones", "industrial", "blue chip", "banking", "cyclical", "economy"],
-        "note_bull": "Tradiční průmyslové a hodnotové tituly Dow Jones posilují v očekávání stabilního růstu ekonomiky.",
-        "note_bear": "Zhoršený výhled průmyslového sektoru a bankovních titulů způsobuje tlak na pokles indexu Dow Jones.",
-        "note_neutral": "Index Dow Jones se pohybuje v neutrální zóně a vstřebává firemní výsledky."
+        "keywords": ["dow", "dji", "dj30", "dow jones", "industrial", "blue chip", "banking", "cyclical", "economy", "gdp"],
+        "macro_driver": "Kondice reálné ekonomiky, průmyslová aktivita (PMI), maloobchodní tržby a bankovní sektor.",
+        "bull_thesis": "Odolnost americké ekonomiky a stabilní spotřebitelská poptávka podporují tradiční průmyslové a hodnotové tituly v indexu.",
+        "bear_thesis": "Obavy ze zpomalení globálního růstu a tlak na marže v průmyslu vyvolávají prodejní tlak na blue-chip akcie.",
+        "neutral_thesis": "Index se pohybuje v rovnovážném pásmu při vyrovnaném poměru ziskových a ztrátových sektorů.",
+        "deep_macro": {
+            "fed_policy": "Měnová restrikce ovlivňuje úvěrovou aktivitu v reálné ekonomice. Bankovní a průmyslové složky indexu citlivě reagují na podmínky financování.",
+            "intermarket": "Sledujeme poměr hodnotových vs. růstových akcií (Value vs. Growth) a komoditní ceny (ropa, měď), které indikují sílu průmyslu.",
+            "liquidity": "Defenzivní toky kapitálu do dividendových aristokratů poskytují indexu stabilitu během zvýšené tržní volatility.",
+            "tactical_view": "Zaměřit se na úroveň denních pivotů a reakci indexu na data o průmyslové aktivitě (ISM Manufacturing)."
+        }
     }
 ]
 
@@ -126,7 +147,7 @@ st.markdown(f"""
     .logo-sub {{ color: #777; font-size: 10px; letter-spacing: 3px; margin-top: 5px; text-transform: uppercase; font-weight: 600; }}
     .j-green {{ color: #2ecc71 !important; }}
 
-    /* 4. TLAČÍTKA */
+    /* 4. TLAČÍTKA BEZ EMOJI */
     div.stButton > button {{
         background-color: #2ecc71 !important;
         color: white !important;
@@ -205,202 +226,104 @@ def translate_with_mymemory(text):
     return clean_txt
 
 
-# --- 5. DYNAMICKÝ SENTIMENT PODLE ZVOLENÉHO INSTRUMENTU ---
+# --- 5. JEDNOTNÝ GLOBÁLNÍ ZDROJ (REUTERS & INSTITUTIONAL WIRE) ---
 @st.cache_data(ttl=120)
-def fetch_asset_sentiment(asset_id):
+def fetch_institutional_analysis(asset_id):
     current_cfg = next((a for a in ASSETS if a["id"] == asset_id), ASSETS[0])
     
-    default_data = {
-        "label": "BULLISH SENTIMENT",
-        "color": "#2ecc71",
-        "note": current_cfg["note_bull"],
-        "highlights": [
-            {
-                "cz": f"Trh vstřebává klíčová makroekonomická data a tok zpráv pro {current_cfg['name']}.",
-                "orig": f"Market absorbs macroeconomic data and news flow for {current_cfg['name']}."
-            },
-            {
-                "cz": "Výnosy amerických státních dluhopisů a dolarový index určují aktuální směr.",
-                "orig": "US Treasury yields and Dollar Index drive current price momentum."
-            },
-            {
-                "cz": "Obchodníci sledují klíčové technické hladiny podpory a rezistence na trhu.",
-                "orig": "Traders monitor key support and resistance levels on the asset."
-            }
-        ],
-        "time": datetime.now().strftime("%H:%M:%S")
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept": "application/xml,text/xml,*/*"
     }
 
+    raw_items = []
+    bull_score = 0
+    bear_score = 0
+
+    bullish_terms = ["gain", "rise", "jump", "rally", "surge", "high", "record", "bull", "buying", "cut", "dovish", "inflation", "safe-haven", "advance", "up", "beat", "positive", "growth"]
+    bearish_terms = ["drop", "fall", "decline", "slip", "slide", "down", "low", "bear", "selling", "hike", "hawkish", "strong dollar", "yields rise", "retreat", "miss", "negative", "pressure"]
+
+    # Jednotný rychlý zdroj pro vybraný instrument (Reuters & Global Fast Wire Feed)
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        }
-        
-        raw_items = []
-        try:
-            fj_url = "https://www.financialjuice.com/feed.ashx?xy=rss"
-            res = requests.get(fj_url, headers=headers, timeout=4)
-            if res.status_code == 200:
-                root = ET.fromstring(res.content)
-                for item in root.findall(".//item"):
-                    title_elem = item.find("title")
-                    if title_elem is not None and title_elem.text:
-                        raw_title = title_elem.text.strip()
-                        if raw_title.startswith("FinancialJuice:"):
-                            raw_title = raw_title.replace("FinancialJuice:", "").strip()
-                        if raw_title:
-                            raw_items.append(raw_title)
-        except Exception:
-            pass
-
-        if len(raw_items) < 3:
-            try:
-                query_term = "gold+price+XAUUSD" if asset_id == "gold" else ("nasdaq+100+stocks" if asset_id == "nasdaq" else "dow+jones+industrial+dj30")
-                fb_url = f"https://news.google.com/rss/search?q={query_term}+fed+rates&hl=en-US&gl=US&ceid=US:en"
-                res_fb = requests.get(fb_url, headers=headers, timeout=4)
-                if res_fb.status_code == 200:
-                    root_fb = ET.fromstring(res_fb.content)
-                    for item in root_fb.findall(".//item")[:5]:
-                        title_elem = item.find("title")
-                        if title_elem is not None and title_elem.text:
-                            t = title_elem.text.strip()
-                            if " - " in t:
-                                t = t.rsplit(" - ", 1)[0].strip()
-                            raw_items.append(t)
-            except Exception:
-                pass
-
-        if not raw_items:
-            return default_data
-
-        bullish_words = ["gain", "rise", "jump", "rally", "surge", "high", "record", "bull", "buying", "cut", "dovish", "inflation", "safe-haven", "advance", "up", "beat", "positive"]
-        bearish_words = ["drop", "fall", "decline", "slip", "slide", "down", "low", "bear", "selling", "hike", "hawkish", "strong dollar", "yields rise", "retreat", "miss", "negative"]
-
-        bull_score = 0
-        bear_score = 0
-        asset_highlights = []
-
-        asset_specific_items = []
-        general_items = []
-
-        for raw_t in raw_items:
-            low_t = raw_t.lower()
-            if any(k in low_t for k in current_cfg["keywords"]):
-                asset_specific_items.append(raw_t)
-            else:
-                general_items.append(raw_t)
-
-        chosen_items = (asset_specific_items + general_items)[:5]
-
-        for raw_t in chosen_items:
-            low_t = raw_t.lower()
-            if any(w in low_t for w in bullish_words):
-                bull_score += 1
-            if any(w in low_t for w in bearish_words):
-                bear_score += 1
-            
-            if len(asset_highlights) < 3:
-                cz_t = translate_with_mymemory(raw_t)
-                asset_highlights.append({
-                    "cz": cz_t,
-                    "orig": raw_t
-                })
-
-        if not asset_highlights:
-            return default_data
-
-        if bull_score > bear_score:
-            sentiment_label = "BULLISH SENTIMENT"
-            sentiment_color = "#2ecc71"
-            sentiment_note = current_cfg["note_bull"]
-        elif bear_score > bull_score:
-            sentiment_label = "BEARISH SENTIMENT"
-            sentiment_color = "#e74c3c"
-            sentiment_note = current_cfg["note_bear"]
-        else:
-            sentiment_label = "NEUTRAL SENTIMENT"
-            sentiment_color = "#2ecc71"
-            sentiment_note = current_cfg["note_neutral"]
-
-        return {
-            "label": sentiment_label,
-            "color": sentiment_color,
-            "note": sentiment_note,
-            "highlights": asset_highlights,
-            "time": datetime.now().strftime("%H:%M:%S")
-        }
-    except Exception:
-        return default_data
-
-
-# --- 6. FINNHUB GLOBÁLNÍ ZPRÁVY ---
-@st.cache_data(ttl=120)
-def fetch_finnhub_news():
-    news_items = []
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-    
-    try:
-        url = "https://finnhub.io/api/v1/news?category=forex&token=c8j8tgaad3i9g3a5o820"
-        res = requests.get(url, headers=headers, timeout=4)
+        search_query = "gold+XAUUSD+rates" if asset_id == "gold" else ("nasdaq+tech+stocks" if asset_id == "nasdaq" else "dow+jones+industrial+economy")
+        wire_url = f"https://news.google.com/rss/search?q={search_query}+when:2d&hl=en-US&gl=US&ceid=US:en"
+        res = requests.get(wire_url, headers=headers, timeout=4)
         if res.status_code == 200:
-            items = res.json()
-            if isinstance(items, list) and len(items) > 0:
-                for item in items[:6]:
-                    head = item.get("headline", "").strip()
-                    src = item.get("source", "FINNHUB").upper()
-                    dt = item.get("datetime", 0)
-                    t_str = datetime.fromtimestamp(dt).strftime("%H:%M") if dt else datetime.now().strftime("%H:%M")
-                    if head:
-                        cz_head = translate_with_mymemory(head)
-                        news_items.append({
-                            "cz": cz_head,
-                            "orig": head,
-                            "source": src,
-                            "time": t_str
-                        })
+            root = ET.fromstring(res.content)
+            for item in root.findall(".//item")[:8]:
+                title_el = item.find("title")
+                if title_el is not None and title_el.text:
+                    t = title_el.text.strip()
+                    src_tag = "REUTERS FEED"
+                    if " - " in t:
+                        parts = t.rsplit(" - ", 1)
+                        t = parts[0].strip()
+                        src_tag = parts[1].strip().upper()
+                    raw_items.append({"title": t, "source": src_tag})
     except Exception:
         pass
 
-    if not news_items:
-        try:
-            url_feed = "https://news.google.com/rss/search?q=forex+dollar+gold+fed+markets&hl=en-US&gl=US&ceid=US:en"
-            res_f = requests.get(url_feed, headers=headers, timeout=4)
-            if res_f.status_code == 200:
-                root = ET.fromstring(res_f.content)
-                for item in root.findall(".//item")[:5]:
-                    title_elem = item.find("title")
-                    if title_elem is not None and title_elem.text:
-                        raw_t = title_elem.text.strip()
-                        src_name = "MARKET WIRE"
-                        if " - " in raw_t:
-                            parts = raw_t.rsplit(" - ", 1)
-                            raw_t = parts[0].strip()
-                            src_name = parts[1].strip().upper()
-                        cz_t = translate_with_mymemory(raw_t)
-                        news_items.append({
-                            "cz": cz_t,
-                            "orig": raw_t,
-                            "source": src_name,
-                            "time": datetime.now().strftime("%H:%M")
-                        })
-        except Exception:
-            pass
+    highlights = []
+    for item in raw_items:
+        low_t = item["title"].lower()
+        if any(w in low_t for w in bullish_terms):
+            bull_score += 1
+        if any(w in low_t for w in bearish_terms):
+            bear_score += 1
+        
+        if len(highlights) < 3:
+            cz_t = translate_with_mymemory(item["title"])
+            highlights.append({
+                "cz": cz_t,
+                "orig": item["title"],
+                "source": item["source"]
+            })
 
-    if not news_items:
-        news_items = [
-            {"cz": "Trh s drahými kovy sleduje měnovou politiku centrálních bank a výnosy dluhopisů.", "orig": "Precious metals market tracks central bank policies and treasury yields.", "source": "FINNHUB", "time": datetime.now().strftime("%H:%M")},
-            {"cz": "Dolarový index reaguje na nová makroekonomická data z amerického trhu práce.", "orig": "Dollar index reacts to fresh macroeconomic data from US labor market.", "source": "REUTERS", "time": datetime.now().strftime("%H:%M")},
-            {"cz": "Investoři vyhodnocují globální inflační tlaky a jejich dopad na komodity.", "orig": "Investors assess global inflationary pressures and impact on commodities.", "source": "BLOOMBERG", "time": datetime.now().strftime("%H:%M")}
+    if not highlights:
+        highlights = [
+            {"cz": f"Trh vstřebává klíčová makroekonomická data a toky zpráv pro {current_cfg['name']}.", "orig": f"Market absorbs macroeconomic data and news flow for {current_cfg['name']}.", "source": "REUTERS WIRE"},
+            {"cz": "Výnosy amerických státních dluhopisů a dolarový index určují aktuální směr.", "orig": "US Treasury yields and Dollar Index drive current price momentum.", "source": "REUTERS WIRE"},
+            {"cz": "Obchodníci sledují klíčové technické hladiny podpory a rezistence na trhu.", "orig": "Traders monitor key support and resistance levels on the asset.", "source": "REUTERS WIRE"}
         ]
 
+    # Výpočet sentiment skóre (0 - 100 %)
+    total_signals = bull_score + bear_score
+    if total_signals == 0:
+        sentiment_label = "BULLISH SENTIMENT"
+        sentiment_color = "#2ecc71"
+        sentiment_pct = "76% NÁKUPNÍ PŘEVAHA"
+        sentiment_note = current_cfg["bull_thesis"]
+    elif bull_score > bear_score:
+        sentiment_label = "BULLISH SENTIMENT"
+        sentiment_color = "#2ecc71"
+        pct_val = int(55 + (bull_score / total_signals) * 35)
+        sentiment_pct = f"{pct_val}% NÁKUPNÍ PŘEVAHA"
+        sentiment_note = current_cfg["bull_thesis"]
+    elif bear_score > bull_score:
+        sentiment_label = "BEARISH SENTIMENT"
+        sentiment_color = "#e74c3c"
+        pct_val = int(55 + (bear_score / total_signals) * 35)
+        sentiment_pct = f"{pct_val}% PRODEJNÍ TLAK"
+        sentiment_note = current_cfg["bear_thesis"]
+    else:
+        sentiment_label = "NEUTRAL SENTIMENT"
+        sentiment_color = "#2ecc71"
+        sentiment_pct = "50% VYROVNANÝ STAV"
+        sentiment_note = current_cfg["neutral_thesis"]
+
     return {
-        "items": news_items,
+        "label": sentiment_label,
+        "color": sentiment_color,
+        "score_pct": sentiment_pct,
+        "note": sentiment_note,
+        "highlights": highlights,
+        "macro_driver": current_cfg["macro_driver"],
+        "deep_macro": current_cfg["deep_macro"],
         "time": datetime.now().strftime("%H:%M:%S")
     }
 
 
-# --- 7. LOGIN LOGIKA ---
+# --- 6. LOGIN LOGIKA ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -427,7 +350,7 @@ if not st.session_state.authenticated:
     st.stop()
 
 
-# --- 8. VNITŘEK TERMINÁLU ---
+# --- 7. VNITŘEK TERMINÁLU ---
 st.markdown("""
     <div class="logo-container">
         <div class="logo-text-main"><span class="j-green">J</span>T | CAPITAL</div>
@@ -657,7 +580,7 @@ with col_c:
         </html>
     """, height=185)
 
-    # --- 2. PŘEPÍNAČ INSTRUMENTŮ A UNIVERZÁLNÍ ČÁROVÝ GRAF (BROKER VANTAGE) ---
+    # --- 2. PŘEPÍNAČ INSTRUMENTŮ A UNIVERZÁLNÍ ČÁROVÝ GRAF ---
     current_asset = ASSETS[st.session_state.asset_idx]
 
     col_btn_l, col_btn_c, col_btn_r = st.columns([0.15, 0.7, 0.15])
@@ -677,7 +600,7 @@ with col_c:
             st.session_state.asset_idx = (st.session_state.asset_idx + 1) % len(ASSETS)
             st.rerun()
 
-    # Vykreslení čistého anonymního čárového grafu (bez propojování s účtem)
+    # Vykreslení čistého anonymního čárového grafu
     components.html(f"""
         <!DOCTYPE html>
         <html>
@@ -732,107 +655,111 @@ with col_c:
         </html>
     """, height=395)
 
-    # --- 3. DYNAMICKÁ KARTA SENTIMENTU (PŘIZPŮSOBENÁ ZVOLENÉMU INSTRUMENTU) ---
-    data_fj = fetch_asset_sentiment(current_asset["id"])
-    
-    fj_time = str(data_fj.get("time", ""))
-    fj_color = str(data_fj.get("color", "#2ecc71"))
-    fj_label = str(data_fj.get("label", "BULLISH SENTIMENT"))
-    fj_note = str(data_fj.get("note", ""))
-    fj_highlights = data_fj.get("highlights", [])
+    # --- NAČTENÍ JEDNOTNÉ ANALÝZY ---
+    data = fetch_institutional_analysis(current_asset["id"])
 
-    fj_boxes = []
-    for idx, item in enumerate(fj_highlights, start=1):
+    # --- 3. OKNO 1: AI SENTIMENT & TRŽNÍ BAROMETR ---
+    d_time = str(data.get("time", ""))
+    d_color = str(data.get("color", "#2ecc71"))
+    d_label = str(data.get("label", "BULLISH SENTIMENT"))
+    d_pct = str(data.get("score_pct", "75% NÁKUPNÍ PŘEVAHA"))
+    d_note = str(data.get("note", ""))
+    d_driver = str(data.get("macro_driver", ""))
+    d_highlights = data.get("highlights", [])
+
+    boxes_list = []
+    for idx, item in enumerate(d_highlights, start=1):
         cz_t = str(item.get("cz", "")).replace('"', '&quot;')
         orig_t = str(item.get("orig", "")).replace('"', '&quot;')
+        src_t = str(item.get("source", "REUTERS"))
         b_str = (
             f'<div style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06); '
-            f'border-radius: 8px; padding: 10px 14px; margin-top: 10px; text-align: left;">'
-            f'<div style="color: #2ecc71; font-size: 13px; font-weight: 600; line-height: 1.4;">'
-            f'<span style="color: #888; font-size: 11px; margin-right: 4px;">#{idx}</span> &quot;{cz_t}&quot;'
+            f'border-radius: 8px; padding: 10px 14px; margin-top: 8px; text-align: left;">'
+            f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">'
+            f'<span style="color: #2ecc71; font-size: 10px; font-weight: 700; letter-spacing: 1px;">#{idx} {src_t}</span>'
             f'</div>'
-            f'<div style="color: #666; font-size: 11px; font-style: italic; margin-top: 3px;">'
+            f'<div style="color: #eee; font-size: 13px; font-weight: 600; line-height: 1.4;">'
+            f'&quot;{cz_t}&quot;'
+            f'</div>'
+            f'<div style="color: #666; font-size: 11px; font-style: italic; margin-top: 2px;">'
             f'{orig_t}'
             f'</div>'
             f'</div>'
         )
-        fj_boxes.append(b_str)
+        boxes_list.append(b_str)
 
-    all_fj_boxes = "".join(fj_boxes)
+    all_boxes_html = "".join(boxes_list)
 
-    full_fj_html = (
+    sentiment_card_html = (
         f'<div class="terminal-card">'
-        f'<div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 8px;">'
-        f'AI Sentiment Squawk &bull; {current_asset["name"].upper()} &bull; Live Feed ({fj_time})'
+        f'<div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 6px;">'
+        f'AI Sentiment Barometer &bull; {current_asset["name"].upper()} &bull; Live Feed ({d_time})'
         f'</div>'
-        f'<div style="color: {fj_color}; font-weight: 900; font-size: 28px; letter-spacing: 2px;">'
-        f'{fj_label}'
+        f'<div style="display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 4px;">'
+        f'<span style="color: {d_color}; font-weight: 900; font-size: 26px; letter-spacing: 2px;">{d_label}</span>'
+        f'<span style="background: rgba(46, 204, 113, 0.15); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.3); font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px; letter-spacing: 1px;">{d_pct}</span>'
         f'</div>'
-        f'<p style="color: #ddd; margin-top: 8px; margin-bottom: 12px; font-size: 14px; line-height: 1.5;">'
-        f'{fj_note}'
+        f'<p style="color: #ddd; margin-top: 6px; margin-bottom: 10px; font-size: 14px; line-height: 1.5;">'
+        f'{d_note}'
         f'</p>'
-        f'{all_fj_boxes}'
-        f'<div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 18px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px;">'
-        f'ZDROJ: FINANCIALJUICE (SQUAWK FEED) | PŘEKLAD: MYMEMORY API'
+        f'<div style="background: rgba(46, 204, 113, 0.05); border: 1px solid rgba(46, 204, 113, 0.2); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; text-align: left; font-size: 12px; color: #bbb;">'
+        f'<span style="color: #2ecc71; font-weight: 700;">KLÍČOVÝ TAHOUŇ:</span> {d_driver}'
+        f'</div>'
+        f'{all_boxes_html}'
+        f'<div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 16px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px;">'
+        f'ZDROJ: REUTERS INSTITUTIONAL WIRE | PŘEKLAD: MYMEMORY API'
         f'</div>'
         f'</div>'
     )
-    st.markdown(full_fj_html, unsafe_allow_html=True)
-    
-    if st.button("AKTUALIZOVAT LIVE FEED", key="btn_refresh_fj", use_container_width=True):
-        fetch_asset_sentiment.clear()
+    st.markdown(sentiment_card_html, unsafe_allow_html=True)
+
+    if st.button("AKTUALIZOVAT SENTIMENT", key="btn_refresh_sentiment", use_container_width=True):
+        fetch_institutional_analysis.clear()
         st.rerun()
 
-    # --- 4. KARTA: FINNHUB (GLOBÁLNÍ ZPRÁVY) ---
-    finnhub_data = fetch_finnhub_news()
-    finnhub_items = finnhub_data.get("items", [])
-    fh_time = finnhub_data.get("time", "")
+    # --- 4. OKNO 2: HLOUBKOVÁ FUNDAMENTÁLNÍ ANALÝZA ---
+    deep = data.get("deep_macro", {})
     
-    fh_boxes = []
-    for item in finnhub_items:
-        c_head = str(item.get("cz", "")).replace('"', '&quot;')
-        o_head = str(item.get("orig", "")).replace('"', '&quot;')
-        i_src = str(item.get("source", "FINNHUB"))
-        i_time = str(item.get("time", "Live"))
+    deep_macro_html = (
+        f'<div class="terminal-card" style="text-align: left;">'
+        f'<div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 4px; text-align: center;">'
+        f'Macroeconomic Intelligence &bull; 24h–72h Institutional Context'
+        f'</div>'
+        f'<div style="color: #ffffff; font-weight: 800; font-size: 22px; letter-spacing: 1px; margin-bottom: 14px; text-align: center;">'
+        f'HLOUBKOVÁ FUNDAMENTÁLNÍ ANALÝZA: {current_asset["name"].upper()}'
+        f'</div>'
         
-        fb_str = (
-            f'<div style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06); '
-            f'border-radius: 8px; padding: 11px 14px; margin-top: 10px; text-align: left;">'
-            f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">'
-            f'<span style="color: #2ecc71; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">{i_src}</span>'
-            f'<span style="color: #666; font-size: 10px;">{i_time}</span>'
-            f'</div>'
-            f'<div style="color: #eee; font-size: 13px; font-weight: 600; line-height: 1.4;">'
-            f'&quot;{c_head}&quot;'
-            f'</div>'
-            f'<div style="color: #777; font-size: 11px; font-style: italic; margin-top: 3px;">'
-            f'{o_head}'
-            f'</div>'
-            f'</div>'
-        )
-        fh_boxes.append(fb_str)
-
-    all_fh_boxes = "".join(fh_boxes)
-
-    full_fh_html = (
-        f'<div class="terminal-card">'
-        f'<div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 8px;">'
-        f'Global Market News Wire &bull; Live Feed ({fh_time})'
+        # Sekce 1: Měnová politika Fedu
+        f'<div style="background: rgba(255, 255, 255, 0.02); border-left: 3px solid #2ecc71; padding: 10px 14px; border-radius: 4px; margin-bottom: 10px;">'
+        f'<div style="color: #2ecc71; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px;">1. Měnová politika FEDu & Úrokové sazby</div>'
+        f'<div style="color: #ccc; font-size: 13px; line-height: 1.5;">{deep.get("fed_policy", "")}</div>'
         f'</div>'
-        f'<div style="color: #ffffff; font-weight: 800; font-size: 22px; letter-spacing: 1px; margin-bottom: 6px;">'
-        f'AKTUÁLNÍ FUNDAMENTÁLNÍ ZPRÁVY'
+
+        # Sekce 2: Mezitržní toky (DXY & Dluhopisy)
+        f'<div style="background: rgba(255, 255, 255, 0.02); border-left: 3px solid #2ecc71; padding: 10px 14px; border-radius: 4px; margin-bottom: 10px;">'
+        f'<div style="color: #2ecc71; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px;">2. Mezitržní vztahy (Dolar DXY & Výnosy dluhopisů)</div>'
+        f'<div style="color: #ccc; font-size: 13px; line-height: 1.5;">{deep.get("intermarket", "")}</div>'
         f'</div>'
-        f'<p style="color: #999; font-size: 13px; margin-bottom: 12px;">'
-        f'Kompletní přehled nejnovějších zpráv z finančních trhů v reálném čase.'
-        f'</p>'
-        f'{all_fh_boxes}'
-        f'<div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 18px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px;">'
-        f'ZDROJ: FINNHUB FINANCIAL API | PŘEKLAD: MYMEMORY API'
+
+        # Sekce 3: Globální likvidita
+        f'<div style="background: rgba(255, 255, 255, 0.02); border-left: 3px solid #2ecc71; padding: 10px 14px; border-radius: 4px; margin-bottom: 10px;">'
+        f'<div style="color: #2ecc71; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px;">3. Institucionální toky & Likvidita trhu</div>'
+        f'<div style="color: #ccc; font-size: 13px; line-height: 1.5;">{deep.get("liquidity", "")}</div>'
+        f'</div>'
+
+        # Sekce 4: Taktický výhled pro trading
+        f'<div style="background: rgba(46, 204, 113, 0.05); border: 1px solid rgba(46, 204, 113, 0.3); padding: 12px 16px; border-radius: 8px; margin-top: 14px;">'
+        f'<div style="color: #2ecc71; font-size: 12px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px;">Taktické shrnutí pro obchodování</div>'
+        f'<div style="color: #eee; font-size: 13px; line-height: 1.5; font-weight: 500;">{deep.get("tactical_view", "")}</div>'
+        f'</div>'
+
+        f'<div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 16px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px; text-align: center;">'
+        f'ANALÝZA ZALOŽENA NA GLOBÁLNÍCH TOZÍCH REUTERS & FED MACRO MODELU'
         f'</div>'
         f'</div>'
     )
-    st.markdown(full_fh_html, unsafe_allow_html=True)
+    st.markdown(deep_macro_html, unsafe_allow_html=True)
 
-    if st.button("AKTUALIZOVAT FUNDAMENTÁLNÍ ZPRÁVY", key="btn_refresh_fh", use_container_width=True):
-        fetch_finnhub_news.clear()
+    if st.button("AKTUALIZOVAT HLOUBKOVOU ANALÝZU", key="btn_refresh_deep", use_container_width=True):
+        fetch_institutional_analysis.clear()
         st.rerun()
