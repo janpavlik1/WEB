@@ -243,9 +243,8 @@ def fetch_institutional_analysis(asset_id):
     bullish_terms = ["gain", "rise", "jump", "rally", "surge", "high", "record", "bull", "buying", "cut", "dovish", "inflation", "safe-haven", "advance", "up", "beat", "positive", "growth"]
     bearish_terms = ["drop", "fall", "decline", "slip", "slide", "down", "low", "bear", "selling", "hike", "hawkish", "strong dollar", "yields rise", "retreat", "miss", "negative", "pressure"]
 
-    # Jednotný rychlý zdroj pro vybraný instrument (Reuters & Global Fast Wire Feed)
     try:
-        search_query = "gold+XAUUSD+rates" if asset_id == "gold" else ("nasdaq+tech+stocks" if asset_id == "nasdaq" else "dow+jones+industrial+economy")
+        search_query = "gold+XAUUSD+rates" if asset_id == "gold" else ("nasdaq+tech+stocks" if asset_id == "nasdaq" else "dow+jones+industrial+dj30")
         wire_url = f"https://news.google.com/rss/search?q={search_query}+when:2d&hl=en-US&gl=US&ceid=US:en"
         res = requests.get(wire_url, headers=headers, timeout=4)
         if res.status_code == 200:
@@ -286,7 +285,6 @@ def fetch_institutional_analysis(asset_id):
             {"cz": "Obchodníci sledují klíčové technické hladiny podpory a rezistence na trhu.", "orig": "Traders monitor key support and resistance levels on the asset.", "source": "REUTERS WIRE"}
         ]
 
-    # Výpočet sentiment skóre (0 - 100 %)
     total_signals = bull_score + bear_score
     if total_signals == 0:
         sentiment_label = "BULLISH SENTIMENT"
@@ -323,7 +321,7 @@ def fetch_institutional_analysis(asset_id):
     }
 
 
-# --- 6. LOGIN LOGIKA ---
+# --- 6. LOGIN LOGIKA (NOVÉ HESLO 1111) ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -342,7 +340,8 @@ if not st.session_state.authenticated:
         num = st.text_input("NUM", placeholder="PŘIHLAŠOVACÍ ČÍSLO", label_visibility="collapsed")
         pwd = st.text_input("PWD", type="password", placeholder="HESLO", label_visibility="collapsed")
         if st.button("PŘIHLÁSIT SE", use_container_width=True):
-            if num == "1234" and pwd == "1234":
+            # Přístup pouze pro údaje 1111 / 1111
+            if num == "1111" and pwd == "1111":
                 st.session_state.authenticated = True
                 st.rerun()
             else:
@@ -580,7 +579,7 @@ with col_c:
         </html>
     """, height=185)
 
-    # --- 2. PŘEPÍNAČ INSTRUMENTŮ A UNIVERZÁLNÍ ČÁROVÝ GRAF ---
+    # --- 2. PŘEPÍNAČ INSTRUMENTŮ A UNIVERZÁLNÍ ČÁROVÝ GRAF (VANTAGE) ---
     current_asset = ASSETS[st.session_state.asset_idx]
 
     col_btn_l, col_btn_c, col_btn_r = st.columns([0.15, 0.7, 0.15])
@@ -655,7 +654,7 @@ with col_c:
         </html>
     """, height=395)
 
-    # --- NAČTENÍ JEDNOTNÉ ANALÝZY ---
+    # --- NAČTENÍ JEDNOTNÉ ANALÝZY ZE ZDROJE REUTERS ---
     data = fetch_institutional_analysis(current_asset["id"])
 
     # --- 3. OKNO 1: AI SENTIMENT & TRŽNÍ BAROMETR ---
