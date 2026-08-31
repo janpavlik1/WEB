@@ -12,12 +12,13 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. DEFINICE INSTRUMENTŮ ---
+# --- 2. DEFINICE INSTRUMENTŮ (FEED BROKERA VANTAGE) ---
 ASSETS = [
     {
         "id": "gold",
         "name": "Zlato (XAU/USD)",
-        "tv_symbol": "FX_IDC:XAUUSD|12M",
+        "broker": "VANTAGE",
+        "tv_symbol": "VANTAGE:XAUUSD",
         "keywords": ["gold", "xau", "xauusd", "bullion", "precious metal"],
         "note_bull": "Zlato posiluje při poklesu výnosů a oslabení dolaru. Nákupní momentum na drahých kovech přetrvává.",
         "note_bear": "Rostoucí dolar a vyšší výnosy dluhopisů vyvíjejí prodejní tlak na cenu zlata.",
@@ -25,8 +26,9 @@ ASSETS = [
     },
     {
         "id": "nasdaq",
-        "name": "Nasdaq 100 (NDX)",
-        "tv_symbol": "NASDAQ:NDX|12M",
+        "name": "Nasdaq 100 (NAS100)",
+        "broker": "VANTAGE",
+        "tv_symbol": "VANTAGE:NAS100",
         "keywords": ["nasdaq", "tech", "ndx", "semiconductor", "ai", "apple", "nvidia", "microsoft", "growth"],
         "note_bull": "Technologický sektor a polovodiče táhnou Nasdaq vzhůru díky silnému růstovému sentimentu.",
         "note_bear": "Rotace z technologických akcií a růst úrokových výnosů vytvářejí korekční tlak na index Nasdaq.",
@@ -34,8 +36,9 @@ ASSETS = [
     },
     {
         "id": "dow",
-        "name": "Dow Jones (DJI / US30)",
-        "tv_symbol": "DJ:DJI|12M",
+        "name": "Dow Jones (US30)",
+        "broker": "VANTAGE",
+        "tv_symbol": "VANTAGE:US30",
         "keywords": ["dow", "dji", "dow jones", "industrial", "blue chip", "banking", "cyclical", "economy"],
         "note_bull": "Tradiční průmyslové a hodnotové tituly Dow Jones posilují v očekávání stabilního růstu ekonomiky.",
         "note_bear": "Zhoršený výhled průmyslového sektoru a bankovních titulů způsobuje tlak na pokles indexu Dow Jones.",
@@ -235,8 +238,6 @@ def fetch_asset_sentiment(asset_id):
         }
         
         raw_items = []
-        
-        # 1. FinancialJuice bleskový feed
         try:
             fj_url = "https://www.financialjuice.com/feed.ashx?xy=rss"
             res = requests.get(fj_url, headers=headers, timeout=4)
@@ -253,7 +254,6 @@ def fetch_asset_sentiment(asset_id):
         except Exception:
             pass
 
-        # 2. Záložní přímý feed cílený na daný instrument
         if len(raw_items) < 3:
             try:
                 query_term = "gold+price+XAUUSD" if asset_id == "gold" else ("nasdaq+100+stocks" if asset_id == "nasdaq" else "dow+jones+industrial")
@@ -281,7 +281,6 @@ def fetch_asset_sentiment(asset_id):
         bear_score = 0
         asset_highlights = []
 
-        # Prioritní výběr zpráv relevantních pro daný instrument
         asset_specific_items = []
         general_items = []
 
@@ -658,7 +657,7 @@ with col_c:
         </html>
     """, height=185)
 
-    # --- 2. PŘEPÍNAČ INSTRUMENTŮ A GRAF TRADINGVIEW ---
+    # --- 2. PŘEPÍNAČ INSTRUMENTŮ A POKROČILÝ GRAF S MINUTOVÝMI KŘIVKAMI (VANTAGE) ---
     current_asset = ASSETS[st.session_state.asset_idx]
 
     col_btn_l, col_btn_c, col_btn_r = st.columns([0.15, 0.7, 0.15])
@@ -669,7 +668,7 @@ with col_c:
     with col_btn_c:
         st.markdown(f"""
         <div style="text-align: center; background: rgba(10, 10, 10, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px; margin-top: 6px;">
-            <div style="color: #888; font-size: 10px; letter-spacing: 2px; text-transform: uppercase;">Aktivní instrument</div>
+            <div style="color: #888; font-size: 10px; letter-spacing: 2px; text-transform: uppercase;">Aktivní graf &bull; Broker {current_asset['broker']}</div>
             <div style="color: #2ecc71; font-weight: 800; font-size: 16px; letter-spacing: 1px;">{current_asset['name'].upper()}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -678,60 +677,62 @@ with col_c:
             st.session_state.asset_idx = (st.session_state.asset_idx + 1) % len(ASSETS)
             st.rerun()
 
-    # Vykreslení grafu pro zvolený instrument
+    # Vykreslení pokročilého interaktivního grafu s minutovým rozlišením
     components.html(f"""
         <!DOCTYPE html>
         <html>
         <head>
             <style>
-                html, body {{ margin: 0; padding: 0; background: transparent !important; overflow: hidden; }}
+                html, body {{ margin: 0; padding: 0; background: transparent !important; overflow: hidden; height: 100%; }}
                 * {{ box-sizing: border-box; }}
                 .terminal-card {{
                     background-color: rgba(10, 10, 10, 0.6) !important;
                     backdrop-filter: blur(12px);
                     -webkit-backdrop-filter: blur(12px);
-                    padding: 20px 25px;
+                    padding: 15px;
                     border-radius: 15px !important;
                     border: 1px solid rgba(255, 255, 255, 0.08) !important;
                     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
                     width: 100%;
+                    height: 100%;
                     overflow: hidden !important;
                 }}
-                .tradingview-widget-container,
-                .tradingview-widget-container > div,
-                .tradingview-widget-container iframe {{
-                    background: transparent !important;
-                    border: none !important;
-                    box-shadow: none !important;
+                .tradingview-widget-container {{
+                    width: 100%;
+                    height: 100%;
+                    border-radius: 10px;
+                    overflow: hidden;
                 }}
             </style>
         </head>
         <body>
             <div class="terminal-card">
                 <div class="tradingview-widget-container">
-                  <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
+                  <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
+                  <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
                   {{
-                    "symbols": [ ["{current_asset['tv_symbol']}"] ],
-                    "chartOnly": false, 
-                    "width": "100%", 
-                    "height": "350", 
-                    "locale": "cs", 
-                    "colorTheme": "dark",
-                    "gridLineColor": "rgba(42, 46, 57, 0)", 
-                    "fontColor": "#787b86", 
-                    "isTransparent": true,
-                    "showFloatingTooltip": true, 
-                    "showVolume": false,
-                    "lineColor": "#2ecc71", 
-                    "topColor": "rgba(46, 204, 113, 0.15)", 
-                    "bottomColor": "rgba(46, 204, 113, 0)"
+                    "autosize": true,
+                    "symbol": "{current_asset['tv_symbol']}",
+                    "interval": "5",
+                    "timezone": "Europe/Prague",
+                    "theme": "dark",
+                    "style": "1",
+                    "locale": "cs",
+                    "backgroundColor": "rgba(10, 10, 10, 0)",
+                    "gridColor": "rgba(255, 255, 255, 0.03)",
+                    "hide_side_toolbar": false,
+                    "allow_symbol_change": false,
+                    "save_image": false,
+                    "calendar": false,
+                    "hide_volume": false,
+                    "support_host": "https://www.tradingview.com"
                   }}
                   </script>
                 </div>
             </div>
         </body>
         </html>
-    """, height=395)
+    """, height=500)
 
     # --- 3. DYNAMICKÁ KARTA SENTIMENTU (PŘIZPŮSOBENÁ ZVOLENÉMU INSTRUMENTU) ---
     data_fj = fetch_asset_sentiment(current_asset["id"])
