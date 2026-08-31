@@ -12,7 +12,26 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. DEFINICE INSTRUMENTŮ A JEJICH MAKRO MODELŮ ---
+# --- 2. DATABÁZE UŽIVATELŮ (PŘIHLAŠOVACÍ ČÍSLA A JMÉNA) ---
+USERS = {
+    "1111": {
+        "pwd": "1111",
+        "name": "Honzo",
+        "welcome": "vítám tě zpátky! Jdeme na to?!"
+    },
+    "2222": {
+        "pwd": "2222",
+        "name": "Petře",
+        "welcome": "vítám tě v terminálu! Dnes bereme zisky."
+    },
+    "3333": {
+        "pwd": "3333",
+        "name": "Tomáši",
+        "welcome": "vítám tě u grafů! Trh na tebe čeká."
+    }
+}
+
+# --- 3. DEFINICE INSTRUMENTŮ A JEJICH MAKRO MODELŮ ---
 ASSETS = [
     {
         "id": "gold",
@@ -70,7 +89,7 @@ ASSETS = [
 if "asset_idx" not in st.session_state:
     st.session_state.asset_idx = 0
 
-# --- 3. TOTÁLNÍ STYLING ---
+# --- 4. TOTÁLNÍ STYLING ---
 BG_IMAGE = "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80&w=2070"
 
 st.markdown(f"""
@@ -141,13 +160,13 @@ st.markdown(f"""
     }}
 
     /* 3. BRANDING */
-    .logo-container {{ text-align: center; margin-top: 10px; margin-bottom: 15px; }}
+    .logo-container {{ text-align: center; margin-top: 10px; margin-bottom: 12px; }}
     .logo-text-intro {{ font-family: 'Inter', sans-serif; font-weight: 800; font-size: 42px; letter-spacing: -2px; color: white; line-height: 1.1; }}
     .logo-text-main {{ font-family: 'Inter', sans-serif; font-weight: 800; font-size: 38px; letter-spacing: -1.5px; color: white; line-height: 1.1; }}
     .logo-sub {{ color: #777; font-size: 10px; letter-spacing: 3px; margin-top: 5px; text-transform: uppercase; font-weight: 600; }}
     .j-green {{ color: #2ecc71 !important; }}
 
-    /* 4. TLAČÍTKA BEZ EMOJI */
+    /* 4. TLAČÍTKA */
     div.stButton > button {{
         background-color: #2ecc71 !important;
         color: white !important;
@@ -185,7 +204,7 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 
-# --- 4. PŘEKLADOVÝ ENGINE (MYMEMORY) ---
+# --- 5. PŘEKLADOVÝ ENGINE (MYMEMORY) ---
 def translate_with_mymemory(text):
     if not text:
         return ""
@@ -226,7 +245,7 @@ def translate_with_mymemory(text):
     return clean_txt
 
 
-# --- 5. JEDNOTNÝ GLOBÁLNÍ ZDROJ (REUTERS & INSTITUTIONAL WIRE) ---
+# --- 6. JEDNOTNÝ GLOBÁLNÍ ZDROJ (REUTERS & INSTITUTIONAL WIRE) ---
 @st.cache_data(ttl=120)
 def fetch_institutional_analysis(asset_id):
     current_cfg = next((a for a in ASSETS if a["id"] == asset_id), ASSETS[0])
@@ -321,7 +340,7 @@ def fetch_institutional_analysis(asset_id):
     }
 
 
-# --- 6. LOGIN LOGIKA (NOVÉ HESLO 1111) ---
+# --- 7. LOGIN LOGIKA (PERSONALIZOVANÁ PODLE ČÍSLA) ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -340,20 +359,27 @@ if not st.session_state.authenticated:
         num = st.text_input("NUM", placeholder="PŘIHLAŠOVACÍ ČÍSLO", label_visibility="collapsed")
         pwd = st.text_input("PWD", type="password", placeholder="HESLO", label_visibility="collapsed")
         if st.button("PŘIHLÁSIT SE", use_container_width=True):
-            # Přístup pouze pro údaje 1111 / 1111
-            if num == "1111" and pwd == "1111":
+            if num in USERS and USERS[num]["pwd"] == pwd:
                 st.session_state.authenticated = True
+                st.session_state.user_name = USERS[num]["name"]
+                st.session_state.welcome_msg = USERS[num]["welcome"]
                 st.rerun()
             else:
                 st.error("PŘÍSTUP ZAMÍTNUT")
     st.stop()
 
 
-# --- 7. VNITŘEK TERMINÁLU ---
-st.markdown("""
+# --- 8. VNITŘEK TERMINÁLU ---
+user_name = st.session_state.get("user_name", "Tradere")
+welcome_msg = st.session_state.get("welcome_msg", "vítám tě zpátky! Jdeme na to?!")
+
+st.markdown(f"""
     <div class="logo-container">
         <div class="logo-text-main"><span class="j-green">J</span>T | CAPITAL</div>
         <div class="logo-sub">TERMINAL v 1</div>
+        <div style="margin-top: 14px; color: #eee; font-size: 16px; font-weight: 700; letter-spacing: 0.5px;">
+            <span class="j-green">{user_name}</span>, {welcome_msg}
+        </div>
     </div>
 """, unsafe_allow_html=True)
 
