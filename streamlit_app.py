@@ -3,9 +3,7 @@ import streamlit.components.v1 as components
 import requests
 import xml.etree.ElementTree as ET
 import html
-import io
 from datetime import datetime
-from PIL import Image, ImageDraw, ImageFont
 
 # --- 1. KONFIGURACE ---
 st.set_page_config(
@@ -14,74 +12,26 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. GENERÁTOR LOGA JAKO JPG KE STAŽENÍ ---
-def generate_logo_bytes():
-    width, height = 1200, 500
-    img = Image.new("RGB", (width, height), color=(10, 10, 10))
-    draw = ImageDraw.Draw(img)
-
-    try:
-        font_main = ImageFont.truetype("arialbd.ttf", 90)
-        font_sub = ImageFont.truetype("arialbd.ttf", 22)
-    except Exception:
-        try:
-            font_main = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 90)
-            font_sub = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 22)
-        except Exception:
-            font_main = ImageFont.load_default()
-            font_sub = ImageFont.load_default()
-
-    green = (46, 204, 113)
-    white = (255, 255, 255)
-    gray = (120, 120, 120)
-
-    j_txt = "J"
-    rest_txt = "T | CAPITAL"
-    sub_txt = "T E R M I N A L   v   1"
-
-    j_box = draw.textbbox((0, 0), j_txt, font=font_main)
-    rest_box = draw.textbbox((0, 0), rest_txt, font=font_main)
-    sub_box = draw.textbbox((0, 0), sub_txt, font=font_sub)
-
-    j_w = j_box[2] - j_box[0]
-    rest_w = rest_box[2] - rest_box[0]
-    total_w = j_w + rest_w + 4
-    sub_w = sub_box[2] - sub_box[0]
-
-    start_x = (width - total_w) // 2
-    main_y = 170
-    sub_x = (width - sub_w) // 2
-    sub_y = main_y + 115
-
-    draw.text((start_x, main_y), j_txt, font=font_main, fill=green)
-    draw.text((start_x + j_w + 4, main_y), rest_txt, font=font_main, fill=white)
-    draw.text((sub_x, sub_y), sub_txt, font=font_sub, fill=gray)
-
-    buf = io.BytesIO()
-    img.save(buf, format="JPEG", quality=98)
-    return buf.getvalue()
-
-
-# --- 3. DATABÁZE UŽIVATELŮ ---
+# --- 2. DATABÁZE UŽIVATELŮ (PŘIHLAŠOVACÍ ČÍSLA A JMÉNA) ---
 USERS = {
     "1111": {
         "pwd": "1111",
         "name": "Honzo",
-        "welcome": "vítám tě zpátky! Jdeme na to?!"
+        "welcome": "vítám tě v terminálu!"
     },
     "2222": {
         "pwd": "2222",
-        "name": "Petře",
-        "welcome": "vítám tě v terminálu! Dnes bereme zisky."
+        "name": "Tomáši",
+        "welcome": "vítám tě v terminálu!"
     },
     "3333": {
         "pwd": "3333",
-        "name": "Tomáši",
-        "welcome": "vítám tě u grafů! Trh na tebe čeká."
+        "name": "Jardo",
+        "welcome": "vítám tě v terminálu!"
     }
 }
 
-# --- 4. DEFINICE INSTRUMENTŮ A JEJICH MAKRO MODELŮ ---
+# --- 3. DEFINICE INSTRUMENTŮ A JEJICH MAKRO MODELŮ ---
 ASSETS = [
     {
         "id": "gold",
@@ -139,7 +89,7 @@ ASSETS = [
 if "asset_idx" not in st.session_state:
     st.session_state.asset_idx = 0
 
-# --- 5. TOTÁLNÍ STYLING ---
+# --- 4. TOTÁLNÍ STYLING ---
 BG_IMAGE = "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80&w=2070"
 
 st.markdown(f"""
@@ -217,7 +167,7 @@ st.markdown(f"""
     .j-green {{ color: #2ecc71 !important; }}
 
     /* 4. TLAČÍTKA */
-    div.stButton > button, div[data-testid="stDownloadButton"] > button {{
+    div.stButton > button {{
         background-color: #2ecc71 !important;
         color: white !important;
         border: none !important;
@@ -232,7 +182,7 @@ st.markdown(f"""
         transition: all 0.2s ease-in-out;
         margin-top: 6px;
     }}
-    div.stButton > button:hover, div[data-testid="stDownloadButton"] > button:hover {{
+    div.stButton > button:hover {{
         box-shadow: 0 0 15px rgba(46, 204, 113, 0.6) !important;
     }}
 
@@ -254,7 +204,7 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 
-# --- 6. PŘEKLADOVÝ ENGINE (MYMEMORY) ---
+# --- 5. PŘEKLADOVÝ ENGINE (MYMEMORY) ---
 def translate_with_mymemory(text):
     if not text:
         return ""
@@ -295,7 +245,7 @@ def translate_with_mymemory(text):
     return clean_txt
 
 
-# --- 7. JEDNOTNÝ GLOBÁLNÍ ZDROJ (REUTERS & INSTITUTIONAL WIRE) ---
+# --- 6. JEDNOTNÝ GLOBÁLNÍ ZDROJ (REUTERS & INSTITUTIONAL WIRE) ---
 @st.cache_data(ttl=120)
 def fetch_institutional_analysis(asset_id):
     current_cfg = next((a for a in ASSETS if a["id"] == asset_id), ASSETS[0])
@@ -390,7 +340,7 @@ def fetch_institutional_analysis(asset_id):
     }
 
 
-# --- 8. LOGIN LOGIKA ---
+# --- 7. LOGIN LOGIKA (PERSONALIZOVANÁ PODLE ČÍSLA) ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -419,7 +369,7 @@ if not st.session_state.authenticated:
     st.stop()
 
 
-# --- 9. VNITŘEK TERMINÁLU ---
+# --- 8. VNITŘEK TERMINÁLU ---
 user_name = st.session_state.get("user_name", "Tradere")
 welcome_msg = st.session_state.get("welcome_msg", "vítám tě zpátky! Jdeme na to?!")
 
@@ -432,17 +382,6 @@ st.markdown(f"""
         </div>
     </div>
 """, unsafe_allow_html=True)
-
-# Tlačítko pro stažení loga
-col_d1, col_d2, col_d3 = st.columns([1, 0.4, 1])
-with col_d2:
-    st.download_button(
-        label="STÁHNOUT LOGO (.JPG)",
-        data=generate_logo_bytes(),
-        file_name="JT_CAPITAL_LOGO.jpg",
-        mime="image/jpeg",
-        use_container_width=True
-    )
 
 col_l, col_c, col_r = st.columns([0.08, 0.84, 0.08])
 
