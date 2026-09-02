@@ -81,103 +81,119 @@ USERS = {
     }
 }
 
-# --- 4. CENTRÁLNÍ BANKY & PROCENTUÁLNÍ PRAVDĚPODOBNOSTI ---
+# --- 4. CENTRÁLNÍ BANKY S TERMÍNY ZASEDÁNÍ A PROCENTY ---
 CENTRAL_BANKS = [
     {
         "code": "FED",
         "name": "Federal Reserve",
         "country": "USA 🇺🇸",
-        "rate": "4.50 %",
+        "rate": "3.75 %",
+        "rate_name": "Fed Funds Target",
+        "next_meeting": "16.–17. září 2026",
         "url": "https://www.federalreserve.gov",
-        "cut_prob": 74,
-        "hold_prob": 26,
+        "cut_prob": 72,
+        "hold_prob": 28,
         "hike_prob": 0,
-        "bias": "Snížení (-25 bps)",
-        "bias_color": "#2ecc71"
+        "consensus": "Snížení (-25 bps)",
+        "status_color": "#2ecc71"
     },
     {
         "code": "ECB",
         "name": "Evropská centrální banka",
         "country": "Eurozóna 🇪🇺",
-        "rate": "3.00 %",
+        "rate": "2.40 %",
+        "rate_name": "Deposit Facility",
+        "next_meeting": "10. září 2026",
         "url": "https://www.ecb.europa.eu/home/html/index.en.html",
-        "cut_prob": 82,
-        "hold_prob": 18,
+        "cut_prob": 64,
+        "hold_prob": 36,
         "hike_prob": 0,
-        "bias": "Snížení (-25 bps)",
-        "bias_color": "#2ecc71"
+        "consensus": "Snížení (-25 bps)",
+        "status_color": "#2ecc71"
     },
     {
         "code": "BOE",
         "name": "Bank of England",
         "country": "Velká Británie 🇬🇧",
-        "rate": "4.75 %",
+        "rate": "3.75 %",
+        "rate_name": "Official Bank Rate",
+        "next_meeting": "17. září 2026",
         "url": "https://www.bankofengland.co.uk",
-        "cut_prob": 42,
-        "hold_prob": 58,
+        "cut_prob": 35,
+        "hold_prob": 65,
         "hike_prob": 0,
-        "bias": "Ponechání beze změny",
-        "bias_color": "#2ecc71"
+        "consensus": "Ponechání beze změny",
+        "status_color": "#2ecc71"
     },
     {
         "code": "BOC",
         "name": "Bank of Canada",
         "country": "Kanada 🇨🇦",
-        "rate": "3.25 %",
+        "rate": "2.25 %",
+        "rate_name": "Overnight Target",
+        "next_meeting": "9. září 2026",
         "url": "https://www.bankofcanada.ca",
-        "cut_prob": 68,
-        "hold_prob": 32,
+        "cut_prob": 58,
+        "hold_prob": 42,
         "hike_prob": 0,
-        "bias": "Snížení (-25 bps)",
-        "bias_color": "#2ecc71"
-    },
-    {
-        "code": "SNB",
-        "name": "Swiss National Bank",
-        "country": "Švýcarsko 🇨🇭",
-        "rate": "0.50 %",
-        "url": "https://www.snb.ch/en/",
-        "cut_prob": 65,
-        "hold_prob": 35,
-        "hike_prob": 0,
-        "bias": "Snížení (-25 bps)",
-        "bias_color": "#2ecc71"
+        "consensus": "Snížení (-25 bps)",
+        "status_color": "#2ecc71"
     },
     {
         "code": "BOJ",
         "name": "Bank of Japan",
         "country": "Japonsko 🇯🇵",
-        "rate": "0.25 %",
+        "rate": "1.00 %",
+        "rate_name": "Policy Rate",
+        "next_meeting": "18.–19. září 2026",
         "url": "https://www.boj.or.jp/en/",
         "cut_prob": 0,
-        "hold_prob": 46,
-        "hike_prob": 54,
-        "bias": "Zvýšení (+25 bps)",
-        "bias_color": "#e74c3c"
+        "hold_prob": 68,
+        "hike_prob": 32,
+        "consensus": "Ponechání beze změny",
+        "status_color": "#2ecc71"
     },
     {
         "code": "RBA",
         "name": "Reserve Bank of Australia",
         "country": "Austrálie 🇦🇺",
         "rate": "4.35 %",
+        "rate_name": "Cash Rate Target",
+        "next_meeting": "22.–23. září 2026",
         "url": "https://www.rba.gov.au",
-        "cut_prob": 38,
-        "hold_prob": 62,
+        "cut_prob": 22,
+        "hold_prob": 78,
         "hike_prob": 0,
-        "bias": "Ponechání beze změny",
-        "bias_color": "#2ecc71"
+        "consensus": "Ponechání beze změny",
+        "status_color": "#2ecc71"
+    },
+    {
+        "code": "SNB",
+        "name": "Swiss National Bank",
+        "country": "Švýcarsko 🇨🇭",
+        "rate": "0.00 %",
+        "rate_name": "SNB Policy Rate",
+        "next_meeting": "24. září 2026",
+        "url": "https://www.snb.ch/en/",
+        "cut_prob": 25,
+        "hold_prob": 75,
+        "hike_prob": 0,
+        "consensus": "Ponechání beze změny",
+        "status_color": "#2ecc71"
     },
     {
         "code": "RBNZ",
         "name": "Reserve Bank of New Zealand",
         "country": "Nový Zéland 🇳🇿",
-        "rate": "4.25 %",
+        "rate": "2.50 %",
+        "rate_name": "Official Cash Rate (OCR)",
+        "next_meeting": "7. října 2026",
         "url": "https://www.rbnz.govt.nz",
-        "cut_prob": 78,
-        "hold_prob": 22,
+        "cut_prob": 70,
+        "hold_prob": 30,
         "hike_prob": 0,
-        "bias": "Snížení (-25 bps)",
-        "bias_color": "#2ecc71"
+        "consensus": "Snížení (-25 bps)",
+        "status_color": "#2ecc71"
     }
 ]
 
@@ -941,7 +957,7 @@ with col_c:
         fetch_institutional_analysis.clear()
         st.rerun()
 
-    # --- 5. OKNO 3: CENTRÁLNÍ BANKY & PRAVDĚPODOBNOST ZMĚNY SAZEB (BEZPEČNÝ FORMÁT) ---
+    # --- 5. OKNO 3: CENTRÁLNÍ BANKY & PRAVDĚPODOBNOST ZMĚNY SAZEB ---
     cb_rows_list = []
     for cb in CENTRAL_BANKS:
         row_str = (
@@ -954,17 +970,19 @@ with col_c:
             f'<span style="color: #888; font-size: 12px;">({cb["country"]})</span>'
             f'</div>'
             f'<div style="color: #666; font-size: 11px; margin-top: 2px;">{cb["name"]}</div>'
+            f'<div style="color: #555; font-size: 10px; font-style: italic;">{cb["rate_name"]}</div>'
             f'</div>'
-            f'<div style="flex: 0.8; text-align: center;">'
+            f'<div style="flex: 0.9; text-align: center;">'
             f'<div style="color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px;">Aktuální sazba</div>'
             f'<div style="color: #2ecc71; font-size: 16px; font-weight: 900; font-variant-numeric: tabular-nums;">{cb["rate"]}</div>'
+            f'<div style="color: #777; font-size: 10px; margin-top: 2px;">📅 {cb["next_meeting"]}</div>'
             f'</div>'
             f'<div style="flex: 1.5; text-align: center; padding: 0 10px;">'
-            f'<div style="color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px;">Pravděpodobnost změny (Příští zasedání)</div>'
-            f'<div style="color: {cb["bias_color"]}; font-size: 12px; font-weight: 800;">{cb["bias"]}</div>'
+            f'<div style="color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px;">Tržní konsensus</div>'
+            f'<div style="color: {cb["status_color"]}; font-size: 12px; font-weight: 800;">{cb["consensus"]}</div>'
             f'<div style="display: flex; justify-content: center; gap: 8px; color: #888; font-size: 10px; margin-top: 2px;">'
             f'<span>Snížení: <b style="color: #2ecc71;">{cb["cut_prob"]}%</b></span>'
-            f'<span>Beze změny: <b style="color: #aaa;">{cb["hold_prob"]}%</b></span>'
+            f'<span>Hold: <b style="color: #aaa;">{cb["hold_prob"]}%</b></span>'
             f'<span>Zvýšení: <b style="color: #e74c3c;">{cb["hike_prob"]}%</b></span>'
             f'</div>'
             f'</div>'
