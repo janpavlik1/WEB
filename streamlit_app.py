@@ -17,17 +17,17 @@ USERS = {
     "1111": {
         "pwd": "1111",
         "name": "Honzo",
-        "welcome": "vítám tě zpátky! Jdeme na to?!"
+        "welcome": "vítám tě v terminálu!"
     },
     "2222": {
         "pwd": "2222",
-        "name": "Petře",
-        "welcome": "vítám tě v terminálu! Dnes bereme zisky."
+        "name": "Tomáši",
+        "welcome": "vítám tě v terminálu!"
     },
     "3333": {
         "pwd": "3333",
-        "name": "Tomáši",
-        "welcome": "vítám tě u grafů! Trh na tebe čeká."
+        "name": "Jardo",
+        "welcome": "vítám tě v terminálu!"
     }
 }
 
