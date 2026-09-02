@@ -81,30 +81,32 @@ USERS = {
     }
 }
 
-# --- 4. CENTRÁLNÍ BANKY S TERMÍNY ZASEDÁNÍ A PROCENTY ---
+# --- 4. CENTRÁLNÍ BANKY (INVESTINGLIVE + CME FEDWATCH MODEL) ---
 CENTRAL_BANKS = [
     {
         "code": "FED",
         "name": "Federal Reserve",
         "country": "USA 🇺🇸",
         "rate": "3.75 %",
-        "rate_name": "Fed Funds Target",
+        "rate_name": "Fed Funds Target Rate",
         "next_meeting": "16.–17. září 2026",
         "url": "https://www.federalreserve.gov",
-        "cut_prob": 72,
-        "hold_prob": 28,
-        "hike_prob": 0,
-        "consensus": "Snížení (-25 bps)",
-        "status_color": "#2ecc71"
+        "source_tag": "CME FEDWATCH (VÁHA 100%)",
+        "cut_prob": 0,
+        "hold_prob": 43,
+        "hike_prob": 57,
+        "consensus": "Zvýšení (+25 bps)",
+        "status_color": "#e74c3c"
     },
     {
         "code": "ECB",
         "name": "Evropská centrální banka",
         "country": "Eurozóna 🇪🇺",
         "rate": "2.40 %",
-        "rate_name": "Deposit Facility",
+        "rate_name": "Deposit Facility Rate",
         "next_meeting": "10. září 2026",
         "url": "https://www.ecb.europa.eu/home/html/index.en.html",
+        "source_tag": "INVESTINGLIVE / ECB",
         "cut_prob": 64,
         "hold_prob": 36,
         "hike_prob": 0,
@@ -119,20 +121,22 @@ CENTRAL_BANKS = [
         "rate_name": "Official Bank Rate",
         "next_meeting": "17. září 2026",
         "url": "https://www.bankofengland.co.uk",
+        "source_tag": "INVESTINGLIVE / BOE",
         "cut_prob": 35,
         "hold_prob": 65,
         "hike_prob": 0,
         "consensus": "Ponechání beze změny",
-        "status_color": "#2ecc71"
+        "status_color": "#ffffff"
     },
     {
         "code": "BOC",
         "name": "Bank of Canada",
         "country": "Kanada 🇨🇦",
         "rate": "2.25 %",
-        "rate_name": "Overnight Target",
+        "rate_name": "Overnight Target Rate",
         "next_meeting": "9. září 2026",
         "url": "https://www.bankofcanada.ca",
+        "source_tag": "INVESTINGLIVE / BOC",
         "cut_prob": 58,
         "hold_prob": 42,
         "hike_prob": 0,
@@ -140,18 +144,19 @@ CENTRAL_BANKS = [
         "status_color": "#2ecc71"
     },
     {
-        "code": "BOJ",
-        "name": "Bank of Japan",
-        "country": "Japonsko 🇯🇵",
-        "rate": "1.00 %",
-        "rate_name": "Policy Rate",
-        "next_meeting": "18.–19. září 2026",
-        "url": "https://www.boj.or.jp/en/",
-        "cut_prob": 0,
-        "hold_prob": 68,
-        "hike_prob": 32,
+        "code": "RBNZ",
+        "name": "Reserve Bank of New Zealand",
+        "country": "Nový Zéland 🇳🇿",
+        "rate": "2.75 %",
+        "rate_name": "Official Cash Rate (OCR)",
+        "next_meeting": "28. října 2026",
+        "url": "https://www.rbnz.govt.nz",
+        "source_tag": "INVESTINGLIVE / RBNZ",
+        "cut_prob": 15,
+        "hold_prob": 75,
+        "hike_prob": 10,
         "consensus": "Ponechání beze změny",
-        "status_color": "#2ecc71"
+        "status_color": "#ffffff"
     },
     {
         "code": "RBA",
@@ -161,11 +166,12 @@ CENTRAL_BANKS = [
         "rate_name": "Cash Rate Target",
         "next_meeting": "22.–23. září 2026",
         "url": "https://www.rba.gov.au",
+        "source_tag": "INVESTINGLIVE / RBA",
         "cut_prob": 22,
         "hold_prob": 78,
         "hike_prob": 0,
         "consensus": "Ponechání beze změny",
-        "status_color": "#2ecc71"
+        "status_color": "#ffffff"
     },
     {
         "code": "SNB",
@@ -175,25 +181,27 @@ CENTRAL_BANKS = [
         "rate_name": "SNB Policy Rate",
         "next_meeting": "24. září 2026",
         "url": "https://www.snb.ch/en/",
+        "source_tag": "INVESTINGLIVE / SNB",
         "cut_prob": 25,
         "hold_prob": 75,
         "hike_prob": 0,
         "consensus": "Ponechání beze změny",
-        "status_color": "#2ecc71"
+        "status_color": "#ffffff"
     },
     {
-        "code": "RBNZ",
-        "name": "Reserve Bank of New Zealand",
-        "country": "Nový Zéland 🇳🇿",
-        "rate": "2.50 %",
-        "rate_name": "Official Cash Rate (OCR)",
-        "next_meeting": "7. října 2026",
-        "url": "https://www.rbnz.govt.nz",
-        "cut_prob": 70,
-        "hold_prob": 30,
-        "hike_prob": 0,
-        "consensus": "Snížení (-25 bps)",
-        "status_color": "#2ecc71"
+        "code": "BOJ",
+        "name": "Bank of Japan",
+        "country": "Japonsko 🇯🇵",
+        "rate": "1.00 %",
+        "rate_name": "Policy Rate",
+        "next_meeting": "18.–19. září 2026",
+        "url": "https://www.boj.or.jp/en/",
+        "source_tag": "INVESTINGLIVE / BOJ",
+        "cut_prob": 0,
+        "hold_prob": 68,
+        "hike_prob": 32,
+        "consensus": "Ponechání beze změny",
+        "status_color": "#ffffff"
     }
 ]
 
@@ -210,8 +218,8 @@ ASSETS = [
         "bear_thesis": "Růst výnosů dluhopisů a posilující dolar zvyšují oportunitní náklady držby zlata, což otevírá prostor pro korekci.",
         "neutral_thesis": "Trh konsoliduje v rovnovážném pásmu. Obchodníci vyčkávají na nová inflační data a rozhodnutí FOMC.",
         "deep_macro": {
-            "fed_policy": "Měnová politika Fedu a trajektorie snižování úrokových sazeb zůstávají klíčovým fundamentem. Zlato jako neúročené aktivum přímo profituje z holubičího postoje centrální banky.",
-            "intermarket": "Sledujeme silnou inverzní korelaci s DXY a US 10Y Yields. Pokles výnosů pod klíčové hladiny historicky spouští institucionální nákupní vlny na COMEXu.",
+            "fed_policy": "Měnová politika Fedu a trajektorie úrokových sazeb zůstávají klíčovým fundamentem. Zvýšená sázka na zvýšení sazeb (57% FedWatch) vytváří krátkodobý tlak na neúročená aktiva.",
+            "intermarket": "Sledujeme silnou inverzní korelaci s DXY a US 10Y Yields. Růst výnosů dluhopisů nad klíčové hladiny zvyšuje náklady držby zlata.",
             "liquidity": "Globální toky kapitálu a nákupy centrálních bank (zejména v Asii) vytvářejí pevné dlouhodobé cenové dno, které absorbuje případné krátkodobé výprodeje.",
             "tactical_view": "Při pullbacku na denní supporty vyhledávat nákupní momentum. Sledovat reakci trhu na vyhlášení klíčových makro dat (CPI, NFP)."
         }
@@ -223,13 +231,13 @@ ASSETS = [
         "tv_symbol": "VANTAGE:NAS100|1D",
         "keywords": ["nasdaq", "tech", "ndx", "semiconductor", "ai", "apple", "nvidia", "microsoft", "growth", "yields"],
         "macro_driver": "Ocenění technologických titulů, diskontní sazby a likvidita velkých hráčů (Big Tech / AI).",
-        "bull_thesis": "Stabilní růst ziskovosti technologických gigantů a očekávání nižších úrokových sazeb podporují silný 'Risk-On' apetit napříč indexem.",
+        "bull_thesis": "Stabilní růst ziskovosti technologických gigantů a silný zájem o AI sektor podporují silný 'Risk-On' apetit napříč indexem.",
         "bear_thesis": "Vyšší výnosy státních dluhopisů stlačují násobky ocenění růstových akcií (P/E compression) a spouštějí sektorovou rotaci do hodnotových titulů.",
         "neutral_thesis": "Index konsoliduje kolem klíčových technických úrovní po předchozích růstových vlnách. Trh čeká na výsledkovou sezónu.",
         "deep_macro": {
-            "fed_policy": "Ocenění růstových společností je extrémně citlivé na diskontní sazbu. Jakýkoliv náznak jestřábího postoje Fedu okamžitě zvyšuje tlak na technologický sektor.",
+            "fed_policy": "Ocenění růstových společností je extrémně citlivé na diskontní sazbu. Zvýšení sazeb Fedu zvyšuje náklad kapitálu pro technologické společnosti.",
             "intermarket": "Korelace s polovodičovým sektorem (SOX) a výnosovou křivkou. Výnosy dluhopisů působí jako gravitační síla na ocenění technologických multiplikátorů.",
-            "liquidity": "Likvidita institucionálních fondů zůstává koncentrována v 'Magnificent 7'. Šířka trhu (market breadth) určuje udržitelnost současného trendu.",
+            "liquidity": "Likvidita institucionálních fondů zůstává koncentrována v technologických lídrech. Šířka trhu (market breadth) určuje udržitelnost trendu.",
             "tactical_view": "Sledovat reakce po otevření Wall Street (15:30 SEČ). Klíčové je potvrzení směru technologickými lídry."
         }
     },
@@ -490,7 +498,7 @@ def fetch_institutional_analysis(asset_id):
         sentiment_note = current_cfg["bear_thesis"]
     else:
         sentiment_label = "NEUTRAL SENTIMENT"
-        sentiment_color = "#2ecc71"
+        sentiment_color = "#ffffff"
         sentiment_pct = "50% VYROVNANÝ STAV"
         sentiment_note = current_cfg["neutral_thesis"]
 
@@ -864,7 +872,7 @@ with col_c:
     d_time = str(data.get("time", ""))
     d_color = str(data.get("color", "#2ecc71"))
     d_label = str(data.get("label", "BULLISH SENTIMENT"))
-    d_pct = str(data.get("score_pct", "75% NÁKUPNÍ PŘEVAHA"))
+    d_pct = str(data.get("score_pct", "76% NÁKUPNÍ PŘEVAHA"))
     d_note = str(data.get("note", ""))
     d_driver = str(data.get("macro_driver", ""))
     d_highlights = data.get("highlights", [])
@@ -957,7 +965,7 @@ with col_c:
         fetch_institutional_analysis.clear()
         st.rerun()
 
-    # --- 5. OKNO 3: CENTRÁLNÍ BANKY & PRAVDĚPODOBNOST ZMĚNY SAZEB ---
+    # --- 5. OKNO 3: CENTRÁLNÍ BANKY (INVESTINGLIVE + CME FEDWATCH MODEL) ---
     cb_rows_list = []
     for cb in CENTRAL_BANKS:
         row_str = (
@@ -978,11 +986,11 @@ with col_c:
             f'<div style="color: #777; font-size: 10px; margin-top: 2px;">📅 {cb["next_meeting"]}</div>'
             f'</div>'
             f'<div style="flex: 1.5; text-align: center; padding: 0 10px;">'
-            f'<div style="color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px;">Tržní konsensus</div>'
+            f'<div style="color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px;">Tržní konsensus ({cb["source_tag"]})</div>'
             f'<div style="color: {cb["status_color"]}; font-size: 12px; font-weight: 800;">{cb["consensus"]}</div>'
             f'<div style="display: flex; justify-content: center; gap: 8px; color: #888; font-size: 10px; margin-top: 2px;">'
             f'<span>Snížení: <b style="color: #2ecc71;">{cb["cut_prob"]}%</b></span>'
-            f'<span>Hold: <b style="color: #aaa;">{cb["hold_prob"]}%</b></span>'
+            f'<span>Hold: <b style="color: #ffffff;">{cb["hold_prob"]}%</b></span>'
             f'<span>Zvýšení: <b style="color: #e74c3c;">{cb["hike_prob"]}%</b></span>'
             f'</div>'
             f'</div>'
@@ -1002,7 +1010,7 @@ with col_c:
     cb_card_html = (
         f'<div class="terminal-card">'
         f'<div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 4px;">'
-        f'Global Monetary Policy Tracker &bull; Institutional OIS Model'
+        f'Global Monetary Policy Tracker &bull; CME FedWatch & InvestingLive OIS Model'
         f'</div>'
         f'<div style="color: #ffffff; font-weight: 800; font-size: 22px; letter-spacing: 1px; margin-bottom: 12px;">'
         f'CENTRÁLNÍ BANKY & VÝVOJ ÚROKOVÝCH SAZEB'
@@ -1012,7 +1020,7 @@ with col_c:
         f'</p>'
         f'{all_cb_rows}'
         f'<div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 16px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px; text-align: center;">'
-        f'ZDROJ: OFICIÁLNÍ WEBY CENTRÁLNÍCH BANK | OIS SWAPS & FUTURES RATE PROBABILITY MODEL'
+        f'ZDROJ: OFICIÁLNÍ WEBY CENTRÁLNÍCH BANK | CME FEDWATCH (FED) & INVESTINGLIVE OIS SWAPS MODEL'
         f'</div>'
         f'</div>'
     )
