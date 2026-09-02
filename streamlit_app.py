@@ -3,7 +3,9 @@ import streamlit.components.v1 as components
 import requests
 import xml.etree.ElementTree as ET
 import html
+import io
 from datetime import datetime
+from PIL import Image, ImageDraw, ImageFont
 
 # --- 1. KONFIGURACE ---
 st.set_page_config(
@@ -12,26 +14,174 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. DATABÁZE UŽIVATELŮ (PŘIHLAŠOVACÍ ČÍSLA A JMÉNA) ---
+# --- 2. GENERÁTOR LOGA JAKO JPG KE STAŽENÍ ---
+def generate_logo_bytes():
+    width, height = 1200, 500
+    img = Image.new("RGB", (width, height), color=(10, 10, 10))
+    draw = ImageDraw.Draw(img)
+
+    try:
+        font_main = ImageFont.truetype("arialbd.ttf", 90)
+        font_sub = ImageFont.truetype("arialbd.ttf", 22)
+    except Exception:
+        try:
+            font_main = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 90)
+            font_sub = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 22)
+        except Exception:
+            font_main = ImageFont.load_default()
+            font_sub = ImageFont.load_default()
+
+    green = (46, 204, 113)
+    white = (255, 255, 255)
+    gray = (120, 120, 120)
+
+    j_txt = "J"
+    rest_txt = "T | CAPITAL"
+    sub_txt = "T E R M I N A L   v   1"
+
+    j_box = draw.textbbox((0, 0), j_txt, font=font_main)
+    rest_box = draw.textbbox((0, 0), rest_txt, font=font_main)
+    sub_box = draw.textbbox((0, 0), sub_txt, font=font_sub)
+
+    j_w = j_box[2] - j_box[0]
+    rest_w = rest_box[2] - rest_box[0]
+    total_w = j_w + rest_w + 4
+    sub_w = sub_box[2] - sub_box[0]
+
+    start_x = (width - total_w) // 2
+    main_y = 170
+    sub_x = (width - sub_w) // 2
+    sub_y = main_y + 115
+
+    draw.text((start_x, main_y), j_txt, font=font_main, fill=green)
+    draw.text((start_x + j_w + 4, main_y), rest_txt, font=font_main, fill=white)
+    draw.text((sub_x, sub_y), sub_txt, font=font_sub, fill=gray)
+
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=98)
+    return buf.getvalue()
+
+
+# --- 3. DATABÁZE UŽIVATELŮ ---
 USERS = {
     "1111": {
         "pwd": "1111",
         "name": "Honzo",
-        "welcome": "vítám tě v terminálu!"
+        "welcome": "vítám tě zpátky! Jdeme na to?!"
     },
     "2222": {
         "pwd": "2222",
-        "name": "Tomáši",
-        "welcome": "vítám tě v terminálu!"
+        "name": "Petře",
+        "welcome": "vítám tě v terminálu! Dnes bereme zisky."
     },
     "3333": {
         "pwd": "3333",
-        "name": "Jardo",
-        "welcome": "vítám tě v terminálu!"
+        "name": "Tomáši",
+        "welcome": "vítám tě u grafů! Trh na tebe čeká."
     }
 }
 
-# --- 3. DEFINICE INSTRUMENTŮ A JEJICH MAKRO MODELŮ ---
+# --- 4. CENTRÁLNÍ BANKY & PROCENTUÁLNÍ PRAVDĚPODOBNOSTI ---
+CENTRAL_BANKS = [
+    {
+        "code": "FED",
+        "name": "Federal Reserve",
+        "country": "USA 🇺🇸",
+        "rate": "4.50 %",
+        "url": "https://www.federalreserve.gov",
+        "cut_prob": 74,
+        "hold_prob": 26,
+        "hike_prob": 0,
+        "bias": "Snížení (-25 bps)",
+        "bias_color": "#2ecc71"
+    },
+    {
+        "code": "ECB",
+        "name": "Evropská centrální banka",
+        "country": "Eurozóna 🇪🇺",
+        "rate": "3.00 %",
+        "url": "https://www.ecb.europa.eu/home/html/index.en.html",
+        "cut_prob": 82,
+        "hold_prob": 18,
+        "hike_prob": 0,
+        "bias": "Snížení (-25 bps)",
+        "bias_color": "#2ecc71"
+    },
+    {
+        "code": "BOE",
+        "name": "Bank of England",
+        "country": "Velká Británie 🇬🇧",
+        "rate": "4.75 %",
+        "url": "https://www.bankofengland.co.uk",
+        "cut_prob": 42,
+        "hold_prob": 58,
+        "hike_prob": 0,
+        "bias": "Ponechání beze změny",
+        "bias_color": "#2ecc71"
+    },
+    {
+        "code": "BOC",
+        "name": "Bank of Canada",
+        "country": "Kanada 🇨🇦",
+        "rate": "3.25 %",
+        "url": "https://www.bankofcanada.ca",
+        "cut_prob": 68,
+        "hold_prob": 32,
+        "hike_prob": 0,
+        "bias": "Snížení (-25 bps)",
+        "bias_color": "#2ecc71"
+    },
+    {
+        "code": "SNB",
+        "name": "Swiss National Bank",
+        "country": "Švýcarsko 🇨🇭",
+        "rate": "0.50 %",
+        "url": "https://www.snb.ch/en/",
+        "cut_prob": 65,
+        "hold_prob": 35,
+        "hike_prob": 0,
+        "bias": "Snížení (-25 bps)",
+        "bias_color": "#2ecc71"
+    },
+    {
+        "code": "BOJ",
+        "name": "Bank of Japan",
+        "country": "Japonsko 🇯🇵",
+        "rate": "0.25 %",
+        "url": "https://www.boj.or.jp/en/",
+        "cut_prob": 0,
+        "hold_prob": 46,
+        "hike_prob": 54,
+        "bias": "Zvýšení (+25 bps)",
+        "bias_color": "#e74c3c"
+    },
+    {
+        "code": "RBA",
+        "name": "Reserve Bank of Australia",
+        "country": "Austrálie 🇦🇺",
+        "rate": "4.35 %",
+        "url": "https://www.rba.gov.au",
+        "cut_prob": 38,
+        "hold_prob": 62,
+        "hike_prob": 0,
+        "bias": "Ponechání beze změny",
+        "bias_color": "#2ecc71"
+    },
+    {
+        "code": "RBNZ",
+        "name": "Reserve Bank of New Zealand",
+        "country": "Nový Zéland 🇳🇿",
+        "rate": "4.25 %",
+        "url": "https://www.rbnz.govt.nz",
+        "cut_prob": 78,
+        "hold_prob": 22,
+        "hike_prob": 0,
+        "bias": "Snížení (-25 bps)",
+        "bias_color": "#2ecc71"
+    }
+]
+
+# --- 5. DEFINICE INSTRUMENTŮ A JEJICH MAKRO MODELŮ ---
 ASSETS = [
     {
         "id": "gold",
@@ -89,7 +239,7 @@ ASSETS = [
 if "asset_idx" not in st.session_state:
     st.session_state.asset_idx = 0
 
-# --- 4. TOTÁLNÍ STYLING ---
+# --- 6. TOTÁLNÍ STYLING ---
 BG_IMAGE = "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80&w=2070"
 
 st.markdown(f"""
@@ -119,7 +269,7 @@ st.markdown(f"""
         border: none !important;
     }}
     
-    /* 2. PŘIHLAŠOVACÍ POLE - JEDNOTNÁ VELIKOST */
+    /* 2. PŘIHLAŠOVACÍ POLE */
     [data-testid="stTextInput"] > div,
     [data-testid="stTextInput"] > div > div,
     div[data-baseweb="input"],
@@ -167,7 +317,7 @@ st.markdown(f"""
     .j-green {{ color: #2ecc71 !important; }}
 
     /* 4. TLAČÍTKA */
-    div.stButton > button {{
+    div.stButton > button, div[data-testid="stDownloadButton"] > button {{
         background-color: #2ecc71 !important;
         color: white !important;
         border: none !important;
@@ -182,7 +332,7 @@ st.markdown(f"""
         transition: all 0.2s ease-in-out;
         margin-top: 6px;
     }}
-    div.stButton > button:hover {{
+    div.stButton > button:hover, div[data-testid="stDownloadButton"] > button:hover {{
         box-shadow: 0 0 15px rgba(46, 204, 113, 0.6) !important;
     }}
 
@@ -204,7 +354,7 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 
-# --- 5. PŘEKLADOVÝ ENGINE (MYMEMORY) ---
+# --- 7. PŘEKLADOVÝ ENGINE (MYMEMORY) ---
 def translate_with_mymemory(text):
     if not text:
         return ""
@@ -245,7 +395,7 @@ def translate_with_mymemory(text):
     return clean_txt
 
 
-# --- 6. JEDNOTNÝ GLOBÁLNÍ ZDROJ (REUTERS & INSTITUTIONAL WIRE) ---
+# --- 8. JEDNOTNÝ GLOBÁLNÍ ZDROJ (REUTERS & INSTITUTIONAL WIRE) ---
 @st.cache_data(ttl=120)
 def fetch_institutional_analysis(asset_id):
     current_cfg = next((a for a in ASSETS if a["id"] == asset_id), ASSETS[0])
@@ -340,7 +490,7 @@ def fetch_institutional_analysis(asset_id):
     }
 
 
-# --- 7. LOGIN LOGIKA (PERSONALIZOVANÁ PODLE ČÍSLA) ---
+# --- 9. LOGIN LOGIKA ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -369,7 +519,7 @@ if not st.session_state.authenticated:
     st.stop()
 
 
-# --- 8. VNITŘEK TERMINÁLU ---
+# --- 10. VNITŘEK TERMINÁLU ---
 user_name = st.session_state.get("user_name", "Tradere")
 welcome_msg = st.session_state.get("welcome_msg", "vítám tě zpátky! Jdeme na to?!")
 
@@ -382,6 +532,17 @@ st.markdown(f"""
         </div>
     </div>
 """, unsafe_allow_html=True)
+
+# Tlačítko pro stažení loga
+col_d1, col_d2, col_d3 = st.columns([1, 0.4, 1])
+with col_d2:
+    st.download_button(
+        label="STÁHNOUT LOGO (.JPG)",
+        data=generate_logo_bytes(),
+        file_name="JT_CAPITAL_LOGO.jpg",
+        mime="image/jpeg",
+        use_container_width=True
+    )
 
 col_l, col_c, col_r = st.columns([0.08, 0.84, 0.08])
 
@@ -787,4 +948,64 @@ with col_c:
 
     if st.button("AKTUALIZOVAT HLOUBKOVOU ANALÝZU", key="btn_refresh_deep", use_container_width=True):
         fetch_institutional_analysis.clear()
+        st.rerun()
+
+    # --- 5. OKNO 3: CENTRÁLNÍ BANKY & PRAVDĚPODOBNOST ZMĚNY SAZEB ---
+    cb_rows_html = ""
+    for cb in CENTRAL_BANKS:
+        cb_rows_html += f"""
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 12px 16px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; text-align: left;">
+            <div style="flex: 1.2;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="color: #fff; font-size: 15px; font-weight: 800;">{cb['code']}</span>
+                    <span style="color: #888; font-size: 12px;">({cb['country']})</span>
+                </div>
+                <div style="color: #666; font-size: 11px; margin-top: 2px;">{cb['name']}</div>
+            </div>
+            
+            <div style="flex: 0.8; text-align: center;">
+                <div style="color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px;">Aktuální sazba</div>
+                <div style="color: #2ecc71; font-size: 16px; font-weight: 900; font-variant-numeric: tabular-nums;">{cb['rate']}</div>
+            </div>
+            
+            <div style="flex: 1.5; text-align: center; padding: 0 10px;">
+                <div style="color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px;">Pravděpodobnost změny (Příští zasedání)</div>
+                <div style="color: {cb['bias_color']}; font-size: 12px; font-weight: 800;">
+                    {cb['bias']}
+                </div>
+                <div style="display: flex; justify-content: center; gap: 8px; color: #888; font-size: 10px; margin-top: 2px;">
+                    <span>Snížení: <b style="color: #2ecc71;">{cb['cut_prob']}%</b></span>
+                    <span>Beze změny: <b style="color: #aaa;">{cb['hold_prob']}%</b></span>
+                    <span>Zvýšení: <b style="color: #e74c3c;">{cb['hike_prob']}%</b></span>
+                </div>
+            </div>
+            
+            <div style="flex: 0.7; text-align: right;">
+                <a href="{cb['url']}" target="_blank" style="display: inline-block; background: rgba(46, 204, 113, 0.15); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.4); border-radius: 6px; padding: 6px 12px; font-size: 11px; font-weight: 700; text-decoration: none; text-transform: uppercase; letter-spacing: 0.5px;">
+                    OFICIÁLNÍ WEB
+                </a>
+            </div>
+        </div>
+        """
+
+    cb_card_html = f"""
+    <div class="terminal-card">
+        <div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 4px;">
+            Global Monetary Policy Tracker &bull; Institutional OIS Model
+        </div>
+        <div style="color: #ffffff; font-weight: 800; font-size: 22px; letter-spacing: 1px; margin-bottom: 12px;">
+            CENTRÁLNÍ BANKY & VÝVOJ ÚROKOVÝCH SAZEB
+        </div>
+        <p style="color: #999; font-size: 13px; margin-bottom: 14px;">
+            Přehled oficiálních úrokových sazeb hlavních světových ekonomik a tržní pravděpodobnosti jejich úpravy.
+        </p>
+        {cb_rows_html}
+        <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 16px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px; text-align: center;">
+            ZDROJ: OFICIÁLNÍ WEBY CENTRÁLNÍCH BANK | OIS SWAPS & FUTURES RATE PROBABILITY MODEL
+        </div>
+    </div>
+    """
+    st.markdown(cb_card_html, unsafe_allow_html=True)
+
+    if st.button("AKTUALIZOVAT SAZBY CENTRÁLNÍCH BANK", key="btn_refresh_cb", use_container_width=True):
         st.rerun()
