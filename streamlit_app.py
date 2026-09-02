@@ -71,12 +71,12 @@ USERS = {
     },
     "2222": {
         "pwd": "2222",
-        "name": "Petře",
+        "name": "Tomáši",
         "welcome": "vítám tě v terminálu! Dnes bereme zisky."
     },
     "3333": {
         "pwd": "3333",
-        "name": "Tomáši",
+        "name": "Jardo",
         "welcome": "vítám tě u grafů! Trh na tebe čeká."
     }
 }
