@@ -31,7 +31,7 @@ USERS = {
     }
 }
 
-# --- 3. CENTRÁLNÍ BANKY (INVESTINGLIVE + CME FEDWATCH MODEL) ---
+# --- 3. CENTRÁLNÍ BANKY (PŘESNÁ MAKRO DATA & CME FEDWATCH) ---
 CENTRAL_BANKS = [
     {
         "code": "FED",
@@ -41,7 +41,7 @@ CENTRAL_BANKS = [
         "rate_name": "Fed Funds Target Rate",
         "next_meeting": "16.–17. září 2026",
         "url": "https://www.federalreserve.gov",
-        "source_tag": "CME FEDWATCH",
+        "source_tag": "CME FEDWATCH (VÁHA 100%)",
         "cut_prob": 0,
         "hold_prob": 43,
         "hike_prob": 57,
@@ -52,46 +52,46 @@ CENTRAL_BANKS = [
         "code": "ECB",
         "name": "Evropská centrální banka",
         "country": "Eurozóna 🇪🇺",
-        "rate": "2.40 %",
+        "rate": "2.25 %",
         "rate_name": "Deposit Facility Rate",
         "next_meeting": "10. září 2026",
         "url": "https://www.ecb.europa.eu/home/html/index.en.html",
         "source_tag": "INVESTINGLIVE / ECB",
-        "cut_prob": 64,
-        "hold_prob": 36,
-        "hike_prob": 0,
-        "consensus": "Snížení (-25 bps)",
-        "status_color": "#2ecc71"
+        "cut_prob": 0,
+        "hold_prob": 38,
+        "hike_prob": 62,
+        "consensus": "Zvýšení (+25 bps)",
+        "status_color": "#e74c3c"
     },
     {
-        "code": "BOE",
-        "name": "Bank of England",
-        "country": "Velká Británie 🇬🇧",
-        "rate": "3.75 %",
-        "rate_name": "Official Bank Rate",
-        "next_meeting": "17. září 2026",
-        "url": "https://www.bankofengland.co.uk",
-        "source_tag": "INVESTINGLIVE / BOE",
-        "cut_prob": 35,
-        "hold_prob": 65,
-        "hike_prob": 0,
-        "consensus": "Ponechání beze změny",
-        "status_color": "#ffffff"
+        "code": "BOJ",
+        "name": "Bank of Japan",
+        "country": "Japonsko 🇯🇵",
+        "rate": "1.00 %",
+        "rate_name": "Policy Rate",
+        "next_meeting": "18.–19. září 2026",
+        "url": "https://www.boj.or.jp/en/",
+        "source_tag": "INVESTINGLIVE / BOJ",
+        "cut_prob": 0,
+        "hold_prob": 32,
+        "hike_prob": 68,
+        "consensus": "Zvýšení (+25 bps)",
+        "status_color": "#e74c3c"
     },
     {
-        "code": "BOC",
-        "name": "Bank of Canada",
-        "country": "Kanada 🇨🇦",
-        "rate": "2.25 %",
-        "rate_name": "Overnight Target Rate",
-        "next_meeting": "9. září 2026",
-        "url": "https://www.bankofcanada.ca",
-        "source_tag": "INVESTINGLIVE / BOC",
-        "cut_prob": 58,
-        "hold_prob": 42,
-        "hike_prob": 0,
-        "consensus": "Snížení (-25 bps)",
-        "status_color": "#2ecc71"
+        "code": "RBA",
+        "name": "Reserve Bank of Australia",
+        "country": "Austrálie 🇦🇺",
+        "rate": "4.35 %",
+        "rate_name": "Cash Rate Target",
+        "next_meeting": "28.–29. září 2026",
+        "url": "https://www.rba.gov.au",
+        "source_tag": "INVESTINGLIVE / RBA",
+        "cut_prob": 0,
+        "hold_prob": 35,
+        "hike_prob": 65,
+        "consensus": "Zvýšení (+25 bps)",
+        "status_color": "#e74c3c"
     },
     {
         "code": "RBNZ",
@@ -102,23 +102,38 @@ CENTRAL_BANKS = [
         "next_meeting": "28. října 2026",
         "url": "https://www.rbnz.govt.nz",
         "source_tag": "INVESTINGLIVE / RBNZ",
-        "cut_prob": 15,
-        "hold_prob": 75,
-        "hike_prob": 10,
+        "cut_prob": 0,
+        "hold_prob": 25,
+        "hike_prob": 75,
+        "consensus": "Zvýšení (+25 bps)",
+        "status_color": "#e74c3c"
+    },
+    {
+        "code": "BOC",
+        "name": "Bank of Canada",
+        "country": "Kanada 🇨🇦",
+        "rate": "2.25 %",
+        "rate_name": "Overnight Target Rate",
+        "next_meeting": "28. října 2026",
+        "url": "https://www.bankofcanada.ca",
+        "source_tag": "INVESTINGLIVE / BOC",
+        "cut_prob": 0,
+        "hold_prob": 82,
+        "hike_prob": 18,
         "consensus": "Ponechání beze změny",
         "status_color": "#ffffff"
     },
     {
-        "code": "RBA",
-        "name": "Reserve Bank of Australia",
-        "country": "Austrálie 🇦🇺",
-        "rate": "4.35 %",
-        "rate_name": "Cash Rate Target",
-        "next_meeting": "22.–23. září 2026",
-        "url": "https://www.rba.gov.au",
-        "source_tag": "INVESTINGLIVE / RBA",
-        "cut_prob": 22,
-        "hold_prob": 78,
+        "code": "BOE",
+        "name": "Bank of England",
+        "country": "Velká Británie 🇬🇧",
+        "rate": "3.75 %",
+        "rate_name": "Official Bank Rate",
+        "next_meeting": "17. září 2026",
+        "url": "https://www.bankofengland.co.uk",
+        "source_tag": "INVESTINGLIVE / BOE",
+        "cut_prob": 20,
+        "hold_prob": 80,
         "hike_prob": 0,
         "consensus": "Ponechání beze změny",
         "status_color": "#ffffff"
@@ -132,30 +147,15 @@ CENTRAL_BANKS = [
         "next_meeting": "24. září 2026",
         "url": "https://www.snb.ch/en/",
         "source_tag": "INVESTINGLIVE / SNB",
-        "cut_prob": 25,
-        "hold_prob": 75,
+        "cut_prob": 15,
+        "hold_prob": 85,
         "hike_prob": 0,
-        "consensus": "Ponechání beze změny",
-        "status_color": "#ffffff"
-    },
-    {
-        "code": "BOJ",
-        "name": "Bank of Japan",
-        "country": "Japonsko 🇯🇵",
-        "rate": "1.00 %",
-        "rate_name": "Policy Rate",
-        "next_meeting": "18.–19. září 2026",
-        "url": "https://www.boj.or.jp/en/",
-        "source_tag": "INVESTINGLIVE / BOJ",
-        "cut_prob": 0,
-        "hold_prob": 68,
-        "hike_prob": 32,
         "consensus": "Ponechání beze změny",
         "status_color": "#ffffff"
     }
 ]
 
-# --- 4. DEFINICE INSTRUMENTŮ A JEJICH MAKRO MODELŮ ---
+# --- 4. DEFINICE INSTRUMENTŮ A MAKRO MODELŮ ---
 ASSETS = [
     {
         "id": "gold",
@@ -165,12 +165,12 @@ ASSETS = [
         "keywords": ["gold", "xau", "xauusd", "bullion", "precious metal", "yields", "dollar", "fed", "inflation"],
         "macro_driver": "Reálné úrokové výnosy (TIPS), Dolarový index (DXY) a poptávka po bezpečném přístavu.",
         "bull_thesis": "Pokles reálných výnosů amerických státních dluhopisů a tlak na oslabení USD vytváří silný fundamentální vítr pro růst zlata k novým rezistencím.",
-        "bear_thesis": "Růst výnosů dluhopisů a posilující dolar zvyšují oportunitní náklady držby zlata, což otevírá prostor pro korekci.",
+        "bear_thesis": "Globální jestřábí postoj centrálních bank (FED, ECB, BOJ) a sázky na zvyšování sazeb zvyšují oportunitní náklady držby neúročeného zlata.",
         "neutral_thesis": "Trh konsoliduje v rovnovážném pásmu. Obchodníci vyčkávají na nová inflační data a rozhodnutí FOMC.",
         "deep_macro": {
-            "fed_policy": "Měnová politika Fedu a trajektorie úrokových sazeb zůstávají klíčovým fundamentem. Zvýšená sázka na zvýšení sazeb (57% FedWatch) vytváří krátkodobý tlak na neúročená aktiva.",
+            "fed_policy": "Měnová politika Fedu a globální vlna zvyšování sazeb (FED 57 %, ECB 62 % na hike) vytvářejí tlak na zhodnocení hotovosti a výnosů.",
             "intermarket": "Sledujeme silnou inverzní korelaci s DXY a US 10Y Yields. Růst výnosů dluhopisů nad klíčové hladiny zvyšuje náklady držby zlata.",
-            "liquidity": "Globální toky kapitálu a nákupy centrálních bank (zejména v Asii) vytvářejí pevné dlouhodobé cenové dno, které absorbuje případné krátkodobé výprodeje.",
+            "liquidity": "Globální toky kapitálu a nákupy centrálních bank (zejména v Asii) vytvářejí pevné dlouhodobé cenové dno, které absorbuje krátkodobé výprodeje.",
             "tactical_view": "Při pullbacku na denní supporty vyhledávat nákupní momentum. Sledovat reakci trhu na vyhlášení klíčových makro dat (CPI, NFP)."
         }
     },
@@ -182,10 +182,10 @@ ASSETS = [
         "keywords": ["nasdaq", "tech", "ndx", "semiconductor", "ai", "apple", "nvidia", "microsoft", "growth", "yields"],
         "macro_driver": "Ocenění technologických titulů, diskontní sazby a likvidita velkých hráčů (Big Tech / AI).",
         "bull_thesis": "Stabilní růst ziskovosti technologických gigantů a silný zájem o AI sektor podporují silný 'Risk-On' apetit napříč indexem.",
-        "bear_thesis": "Vyšší výnosy státních dluhopisů stlačují násobky ocenění růstových akcií (P/E compression) a spouštějí sektorovou rotaci do hodnotových titulů.",
+        "bear_thesis": "Vyšší výnosy státních dluhopisů a přísnější měnová politika centrálních bank stlačují násobky ocenění růstových akcií (P/E compression).",
         "neutral_thesis": "Index konsoliduje kolem klíčových technických úrovní po předchozích růstových vlnách. Trh čeká na výsledkovou sezónu.",
         "deep_macro": {
-            "fed_policy": "Ocenění růstových společností je extrémně citlivé na diskontní sazbu. Zvýšení sazeb Fedu zvyšuje náklad kapitálu pro technologické společnosti.",
+            "fed_policy": "Ocenění růstových společností je extrémně citlivé na diskontní sazbu. Vyšší sazby Fedu zvyšují náklad kapitálu pro technologický sektor.",
             "intermarket": "Korelace s polovodičovým sektorem (SOX) a výnosovou křivkou. Výnosy dluhopisů působí jako gravitační síla na ocenění technologických multiplikátorů.",
             "liquidity": "Likvidita institucionálních fondů zůstává koncentrována v technologických lídrech. Šířka trhu (market breadth) určuje udržitelnost trendu.",
             "tactical_view": "Sledovat reakce po otevření Wall Street (15:30 SEČ). Klíčové je potvrzení směru technologickými lídry."
@@ -199,10 +199,10 @@ ASSETS = [
         "keywords": ["dow", "dji", "dj30", "dow jones", "industrial", "blue chip", "banking", "cyclical", "economy", "gdp"],
         "macro_driver": "Kondice reálné ekonomiky, průmyslová aktivita (PMI), maloobchodní tržby a bankovní sektor.",
         "bull_thesis": "Odolnost americké ekonomiky a stabilní spotřebitelská poptávka podporují tradiční průmyslové a hodnotové tituly v indexu.",
-        "bear_thesis": "Obavy ze zpomalení globálního růstu a tlak na marže v průmyslu vyvolávají prodejní tlak na blue-chip akcie.",
+        "bear_thesis": "Obavy ze zpomalení globálního růstu a přísnější úvěrové podmínky vyvolávají prodejní tlak na blue-chip akcie.",
         "neutral_thesis": "Index se pohybuje v rovnovážném pásmu při vyrovnaném poměru ziskových a ztrátových sektorů.",
         "deep_macro": {
-            "fed_policy": "Měnová restrikce ovlivňuje úvěrovou aktivitu v reálné ekonomice. Bankovní a průmyslové složky indexu citlivě reagují na podmínky financování.",
+            "fed_policy": "Vyšší úrokové sazby ovlivňují úvěrovou aktivitu v reálné ekonomice. Bankovní a průmyslové složky indexu citlivě reagují na podmínky financování.",
             "intermarket": "Sledujeme poměr hodnotových vs. růstových akcií (Value vs. Growth) a komoditní ceny (ropa, měď), které indikují sílu průmyslu.",
             "liquidity": "Defenzivní toky kapitálu do dividendových aristokratů poskytují indexu stabilitu během zvýšené tržní volatility.",
             "tactical_view": "Zaměřit se na úroveň denních pivotů a reakci indexu na data o průmyslové aktivitě (ISM Manufacturing)."
