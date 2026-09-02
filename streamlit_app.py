@@ -3,9 +3,7 @@ import streamlit.components.v1 as components
 import requests
 import xml.etree.ElementTree as ET
 import html
-import io
 from datetime import datetime
-from PIL import Image, ImageDraw, ImageFont
 
 # --- 1. KONFIGURACE ---
 st.set_page_config(
@@ -14,55 +12,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. GENERÁTOR LOGA JAKO JPG KE STAŽENÍ ---
-def generate_logo_bytes():
-    width, height = 1200, 500
-    img = Image.new("RGB", (width, height), color=(10, 10, 10))
-    draw = ImageDraw.Draw(img)
-
-    try:
-        font_main = ImageFont.truetype("arialbd.ttf", 90)
-        font_sub = ImageFont.truetype("arialbd.ttf", 22)
-    except Exception:
-        try:
-            font_main = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 90)
-            font_sub = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 22)
-        except Exception:
-            font_main = ImageFont.load_default()
-            font_sub = ImageFont.load_default()
-
-    green = (46, 204, 113)
-    white = (255, 255, 255)
-    gray = (120, 120, 120)
-
-    j_txt = "J"
-    rest_txt = "T | CAPITAL"
-    sub_txt = "T E R M I N A L   v   1"
-
-    j_box = draw.textbbox((0, 0), j_txt, font=font_main)
-    rest_box = draw.textbbox((0, 0), rest_txt, font=font_main)
-    sub_box = draw.textbbox((0, 0), sub_txt, font=font_sub)
-
-    j_w = j_box[2] - j_box[0]
-    rest_w = rest_box[2] - rest_box[0]
-    total_w = j_w + rest_w + 4
-    sub_w = sub_box[2] - sub_box[0]
-
-    start_x = (width - total_w) // 2
-    main_y = 170
-    sub_x = (width - sub_w) // 2
-    sub_y = main_y + 115
-
-    draw.text((start_x, main_y), j_txt, font=font_main, fill=green)
-    draw.text((start_x + j_w + 4, main_y), rest_txt, font=font_main, fill=white)
-    draw.text((sub_x, sub_y), sub_txt, font=font_sub, fill=gray)
-
-    buf = io.BytesIO()
-    img.save(buf, format="JPEG", quality=98)
-    return buf.getvalue()
-
-
-# --- 3. DATABÁZE UŽIVATELŮ ---
+# --- 2. DATABÁZE UŽIVATELŮ ---
 USERS = {
     "1111": {
         "pwd": "1111",
@@ -81,7 +31,7 @@ USERS = {
     }
 }
 
-# --- 4. CENTRÁLNÍ BANKY (INVESTINGLIVE + CME FEDWATCH MODEL) ---
+# --- 3. CENTRÁLNÍ BANKY (INVESTINGLIVE + CME FEDWATCH MODEL) ---
 CENTRAL_BANKS = [
     {
         "code": "FED",
@@ -91,7 +41,7 @@ CENTRAL_BANKS = [
         "rate_name": "Fed Funds Target Rate",
         "next_meeting": "16.–17. září 2026",
         "url": "https://www.federalreserve.gov",
-        "source_tag": "CME FEDWATCH (VÁHA 100%)",
+        "source_tag": "CME FEDWATCH",
         "cut_prob": 0,
         "hold_prob": 43,
         "hike_prob": 57,
@@ -205,7 +155,7 @@ CENTRAL_BANKS = [
     }
 ]
 
-# --- 5. DEFINICE INSTRUMENTŮ A JEJICH MAKRO MODELŮ ---
+# --- 4. DEFINICE INSTRUMENTŮ A JEJICH MAKRO MODELŮ ---
 ASSETS = [
     {
         "id": "gold",
@@ -263,7 +213,7 @@ ASSETS = [
 if "asset_idx" not in st.session_state:
     st.session_state.asset_idx = 0
 
-# --- 6. TOTÁLNÍ STYLING ---
+# --- 5. TOTÁLNÍ STYLING ---
 BG_IMAGE = "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80&w=2070"
 
 st.markdown(f"""
@@ -341,7 +291,7 @@ st.markdown(f"""
     .j-green {{ color: #2ecc71 !important; }}
 
     /* 4. TLAČÍTKA */
-    div.stButton > button, div[data-testid="stDownloadButton"] > button {{
+    div.stButton > button {{
         background-color: #2ecc71 !important;
         color: white !important;
         border: none !important;
@@ -356,7 +306,7 @@ st.markdown(f"""
         transition: all 0.2s ease-in-out;
         margin-top: 6px;
     }}
-    div.stButton > button:hover, div[data-testid="stDownloadButton"] > button:hover {{
+    div.stButton > button:hover {{
         box-shadow: 0 0 15px rgba(46, 204, 113, 0.6) !important;
     }}
 
@@ -378,7 +328,7 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 
-# --- 7. PŘEKLADOVÝ ENGINE (MYMEMORY) ---
+# --- 6. PŘEKLADOVÝ ENGINE (MYMEMORY) ---
 def translate_with_mymemory(text):
     if not text:
         return ""
@@ -419,7 +369,7 @@ def translate_with_mymemory(text):
     return clean_txt
 
 
-# --- 8. JEDNOTNÝ GLOBÁLNÍ ZDROJ (REUTERS & INSTITUTIONAL WIRE) ---
+# --- 7. JEDNOTNÝ GLOBÁLNÍ ZDROJ (REUTERS & INSTITUTIONAL WIRE) ---
 @st.cache_data(ttl=120)
 def fetch_institutional_analysis(asset_id):
     current_cfg = next((a for a in ASSETS if a["id"] == asset_id), ASSETS[0])
@@ -514,7 +464,7 @@ def fetch_institutional_analysis(asset_id):
     }
 
 
-# --- 9. LOGIN LOGIKA ---
+# --- 8. LOGIN LOGIKA ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -543,7 +493,7 @@ if not st.session_state.authenticated:
     st.stop()
 
 
-# --- 10. VNITŘEK TERMINÁLU ---
+# --- 9. VNITŘEK TERMINÁLU ---
 user_name = st.session_state.get("user_name", "Tradere")
 welcome_msg = st.session_state.get("welcome_msg", "vítám tě zpátky! Jdeme na to?!")
 
@@ -556,17 +506,6 @@ st.markdown(f"""
         </div>
     </div>
 """, unsafe_allow_html=True)
-
-# Tlačítko pro stažení loga
-col_d1, col_d2, col_d3 = st.columns([1, 0.4, 1])
-with col_d2:
-    st.download_button(
-        label="STÁHNOUT LOGO (.JPG)",
-        data=generate_logo_bytes(),
-        file_name="JT_CAPITAL_LOGO.jpg",
-        mime="image/jpeg",
-        use_container_width=True
-    )
 
 col_l, col_c, col_r = st.columns([0.08, 0.84, 0.08])
 
@@ -965,12 +904,12 @@ with col_c:
         fetch_institutional_analysis.clear()
         st.rerun()
 
-    # --- 5. OKNO 3: CENTRÁLNÍ BANKY (INVESTINGLIVE + CME FEDWATCH MODEL) ---
+    # --- 5. OKNO 3: CENTRÁLNÍ BANKY & VÝRAZNĚ ZVÝRAZNĚNÁ DATA ZASEDÁNÍ ---
     cb_rows_list = []
     for cb in CENTRAL_BANKS:
         row_str = (
             f'<div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); '
-            f'border-radius: 10px; padding: 12px 16px; margin-top: 8px; display: flex; justify-content: space-between; '
+            f'border-radius: 10px; padding: 14px 16px; margin-top: 8px; display: flex; justify-content: space-between; '
             f'align-items: center; text-align: left;">'
             f'<div style="flex: 1.2;">'
             f'<div style="display: flex; align-items: center; gap: 6px;">'
@@ -980,20 +919,29 @@ with col_c:
             f'<div style="color: #666; font-size: 11px; margin-top: 2px;">{cb["name"]}</div>'
             f'<div style="color: #555; font-size: 10px; font-style: italic;">{cb["rate_name"]}</div>'
             f'</div>'
-            f'<div style="flex: 0.9; text-align: center;">'
+            
+            # Sazba a výrazně zvýrazněné datum zasedání
+            f'<div style="flex: 1.1; text-align: center;">'
             f'<div style="color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px;">Aktuální sazba</div>'
-            f'<div style="color: #2ecc71; font-size: 16px; font-weight: 900; font-variant-numeric: tabular-nums;">{cb["rate"]}</div>'
-            f'<div style="color: #777; font-size: 10px; margin-top: 2px;">📅 {cb["next_meeting"]}</div>'
+            f'<div style="color: #2ecc71; font-size: 17px; font-weight: 900; font-variant-numeric: tabular-nums;">{cb["rate"]}</div>'
+            f'<div style="display: inline-block; background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(46, 204, 113, 0.35); '
+            f'border-radius: 6px; padding: 3px 8px; margin-top: 4px; color: #2ecc71; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">'
+            f'📅 {cb["next_meeting"]}'
             f'</div>'
-            f'<div style="flex: 1.5; text-align: center; padding: 0 10px;">'
+            f'</div>'
+            
+            # Pravděpodobnost a konsensus
+            f'<div style="flex: 1.4; text-align: center; padding: 0 10px;">'
             f'<div style="color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px;">Tržní konsensus ({cb["source_tag"]})</div>'
             f'<div style="color: {cb["status_color"]}; font-size: 12px; font-weight: 800;">{cb["consensus"]}</div>'
-            f'<div style="display: flex; justify-content: center; gap: 8px; color: #888; font-size: 10px; margin-top: 2px;">'
+            f'<div style="display: flex; justify-content: center; gap: 8px; color: #888; font-size: 10px; margin-top: 4px;">'
             f'<span>Snížení: <b style="color: #2ecc71;">{cb["cut_prob"]}%</b></span>'
             f'<span>Hold: <b style="color: #ffffff;">{cb["hold_prob"]}%</b></span>'
             f'<span>Zvýšení: <b style="color: #e74c3c;">{cb["hike_prob"]}%</b></span>'
             f'</div>'
             f'</div>'
+            
+            # Tlačítko na oficiální web
             f'<div style="flex: 0.7; text-align: right;">'
             f'<a href="{cb["url"]}" target="_blank" style="display: inline-block; background: rgba(46, 204, 113, 0.15); '
             f'color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.4); border-radius: 6px; padding: 6px 12px; '
