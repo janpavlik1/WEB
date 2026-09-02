@@ -71,12 +71,12 @@ USERS = {
     },
     "2222": {
         "pwd": "2222",
-        "name": "Tomáši",
+        "name": "Petře",
         "welcome": "vítám tě v terminálu! Dnes bereme zisky."
     },
     "3333": {
         "pwd": "3333",
-        "name": "Jardo",
+        "name": "Tomáši",
         "welcome": "vítám tě u grafů! Trh na tebe čeká."
     }
 }
@@ -914,31 +914,22 @@ with col_c:
         f'<div style="color: #ffffff; font-weight: 800; font-size: 22px; letter-spacing: 1px; margin-bottom: 14px; text-align: center;">'
         f'HLOUBKOVÁ FUNDAMENTÁLNÍ ANALÝZA: {current_asset["name"].upper()}'
         f'</div>'
-        
-        # Sekce 1: Měnová politika Fedu
         f'<div style="background: rgba(255, 255, 255, 0.02); border-left: 3px solid #2ecc71; padding: 10px 14px; border-radius: 4px; margin-bottom: 10px;">'
         f'<div style="color: #2ecc71; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px;">1. Měnová politika FEDu & Úrokové sazby</div>'
         f'<div style="color: #ccc; font-size: 13px; line-height: 1.5;">{deep.get("fed_policy", "")}</div>'
         f'</div>'
-
-        # Sekce 2: Mezitržní toky (DXY & Dluhopisy)
         f'<div style="background: rgba(255, 255, 255, 0.02); border-left: 3px solid #2ecc71; padding: 10px 14px; border-radius: 4px; margin-bottom: 10px;">'
         f'<div style="color: #2ecc71; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px;">2. Mezitržní vztahy (Dolar DXY & Výnosy dluhopisů)</div>'
         f'<div style="color: #ccc; font-size: 13px; line-height: 1.5;">{deep.get("intermarket", "")}</div>'
         f'</div>'
-
-        # Sekce 3: Globální likvidita
         f'<div style="background: rgba(255, 255, 255, 0.02); border-left: 3px solid #2ecc71; padding: 10px 14px; border-radius: 4px; margin-bottom: 10px;">'
         f'<div style="color: #2ecc71; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px;">3. Institucionální toky & Likvidita trhu</div>'
         f'<div style="color: #ccc; font-size: 13px; line-height: 1.5;">{deep.get("liquidity", "")}</div>'
         f'</div>'
-
-        # Sekce 4: Taktický výhled pro trading
         f'<div style="background: rgba(46, 204, 113, 0.05); border: 1px solid rgba(46, 204, 113, 0.3); padding: 12px 16px; border-radius: 8px; margin-top: 14px;">'
         f'<div style="color: #2ecc71; font-size: 12px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px;">Taktické shrnutí pro obchodování</div>'
         f'<div style="color: #eee; font-size: 13px; line-height: 1.5; font-weight: 500;">{deep.get("tactical_view", "")}</div>'
         f'</div>'
-
         f'<div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 16px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px; text-align: center;">'
         f'ANALÝZA ZALOŽENA NA GLOBÁLNÍCH TOZÍCH REUTERS & FED MACRO MODELU'
         f'</div>'
@@ -950,61 +941,63 @@ with col_c:
         fetch_institutional_analysis.clear()
         st.rerun()
 
-    # --- 5. OKNO 3: CENTRÁLNÍ BANKY & PRAVDĚPODOBNOST ZMĚNY SAZEB ---
-    cb_rows_html = ""
+    # --- 5. OKNO 3: CENTRÁLNÍ BANKY & PRAVDĚPODOBNOST ZMĚNY SAZEB (BEZPEČNÝ FORMÁT) ---
+    cb_rows_list = []
     for cb in CENTRAL_BANKS:
-        cb_rows_html += f"""
-        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 12px 16px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; text-align: left;">
-            <div style="flex: 1.2;">
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="color: #fff; font-size: 15px; font-weight: 800;">{cb['code']}</span>
-                    <span style="color: #888; font-size: 12px;">({cb['country']})</span>
-                </div>
-                <div style="color: #666; font-size: 11px; margin-top: 2px;">{cb['name']}</div>
-            </div>
-            
-            <div style="flex: 0.8; text-align: center;">
-                <div style="color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px;">Aktuální sazba</div>
-                <div style="color: #2ecc71; font-size: 16px; font-weight: 900; font-variant-numeric: tabular-nums;">{cb['rate']}</div>
-            </div>
-            
-            <div style="flex: 1.5; text-align: center; padding: 0 10px;">
-                <div style="color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px;">Pravděpodobnost změny (Příští zasedání)</div>
-                <div style="color: {cb['bias_color']}; font-size: 12px; font-weight: 800;">
-                    {cb['bias']}
-                </div>
-                <div style="display: flex; justify-content: center; gap: 8px; color: #888; font-size: 10px; margin-top: 2px;">
-                    <span>Snížení: <b style="color: #2ecc71;">{cb['cut_prob']}%</b></span>
-                    <span>Beze změny: <b style="color: #aaa;">{cb['hold_prob']}%</b></span>
-                    <span>Zvýšení: <b style="color: #e74c3c;">{cb['hike_prob']}%</b></span>
-                </div>
-            </div>
-            
-            <div style="flex: 0.7; text-align: right;">
-                <a href="{cb['url']}" target="_blank" style="display: inline-block; background: rgba(46, 204, 113, 0.15); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.4); border-radius: 6px; padding: 6px 12px; font-size: 11px; font-weight: 700; text-decoration: none; text-transform: uppercase; letter-spacing: 0.5px;">
-                    OFICIÁLNÍ WEB
-                </a>
-            </div>
-        </div>
-        """
+        row_str = (
+            f'<div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); '
+            f'border-radius: 10px; padding: 12px 16px; margin-top: 8px; display: flex; justify-content: space-between; '
+            f'align-items: center; text-align: left;">'
+            f'<div style="flex: 1.2;">'
+            f'<div style="display: flex; align-items: center; gap: 6px;">'
+            f'<span style="color: #fff; font-size: 15px; font-weight: 800;">{cb["code"]}</span>'
+            f'<span style="color: #888; font-size: 12px;">({cb["country"]})</span>'
+            f'</div>'
+            f'<div style="color: #666; font-size: 11px; margin-top: 2px;">{cb["name"]}</div>'
+            f'</div>'
+            f'<div style="flex: 0.8; text-align: center;">'
+            f'<div style="color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px;">Aktuální sazba</div>'
+            f'<div style="color: #2ecc71; font-size: 16px; font-weight: 900; font-variant-numeric: tabular-nums;">{cb["rate"]}</div>'
+            f'</div>'
+            f'<div style="flex: 1.5; text-align: center; padding: 0 10px;">'
+            f'<div style="color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px;">Pravděpodobnost změny (Příští zasedání)</div>'
+            f'<div style="color: {cb["bias_color"]}; font-size: 12px; font-weight: 800;">{cb["bias"]}</div>'
+            f'<div style="display: flex; justify-content: center; gap: 8px; color: #888; font-size: 10px; margin-top: 2px;">'
+            f'<span>Snížení: <b style="color: #2ecc71;">{cb["cut_prob"]}%</b></span>'
+            f'<span>Beze změny: <b style="color: #aaa;">{cb["hold_prob"]}%</b></span>'
+            f'<span>Zvýšení: <b style="color: #e74c3c;">{cb["hike_prob"]}%</b></span>'
+            f'</div>'
+            f'</div>'
+            f'<div style="flex: 0.7; text-align: right;">'
+            f'<a href="{cb["url"]}" target="_blank" style="display: inline-block; background: rgba(46, 204, 113, 0.15); '
+            f'color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.4); border-radius: 6px; padding: 6px 12px; '
+            f'font-size: 11px; font-weight: 700; text-decoration: none; text-transform: uppercase; letter-spacing: 0.5px;">'
+            f'OFICIÁLNÍ WEB'
+            f'</a>'
+            f'</div>'
+            f'</div>'
+        )
+        cb_rows_list.append(row_str)
 
-    cb_card_html = f"""
-    <div class="terminal-card">
-        <div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 4px;">
-            Global Monetary Policy Tracker &bull; Institutional OIS Model
-        </div>
-        <div style="color: #ffffff; font-weight: 800; font-size: 22px; letter-spacing: 1px; margin-bottom: 12px;">
-            CENTRÁLNÍ BANKY & VÝVOJ ÚROKOVÝCH SAZEB
-        </div>
-        <p style="color: #999; font-size: 13px; margin-bottom: 14px;">
-            Přehled oficiálních úrokových sazeb hlavních světových ekonomik a tržní pravděpodobnosti jejich úpravy.
-        </p>
-        {cb_rows_html}
-        <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 16px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px; text-align: center;">
-            ZDROJ: OFICIÁLNÍ WEBY CENTRÁLNÍCH BANK | OIS SWAPS & FUTURES RATE PROBABILITY MODEL
-        </div>
-    </div>
-    """
+    all_cb_rows = "".join(cb_rows_list)
+
+    cb_card_html = (
+        f'<div class="terminal-card">'
+        f'<div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 4px;">'
+        f'Global Monetary Policy Tracker &bull; Institutional OIS Model'
+        f'</div>'
+        f'<div style="color: #ffffff; font-weight: 800; font-size: 22px; letter-spacing: 1px; margin-bottom: 12px;">'
+        f'CENTRÁLNÍ BANKY & VÝVOJ ÚROKOVÝCH SAZEB'
+        f'</div>'
+        f'<p style="color: #999; font-size: 13px; margin-bottom: 14px;">'
+        f'Přehled oficiálních úrokových sazeb hlavních světových ekonomik a tržní pravděpodobnosti jejich úpravy.'
+        f'</p>'
+        f'{all_cb_rows}'
+        f'<div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 16px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px; text-align: center;">'
+        f'ZDROJ: OFICIÁLNÍ WEBY CENTRÁLNÍCH BANK | OIS SWAPS & FUTURES RATE PROBABILITY MODEL'
+        f'</div>'
+        f'</div>'
+    )
     st.markdown(cb_card_html, unsafe_allow_html=True)
 
     if st.button("AKTUALIZOVAT SAZBY CENTRÁLNÍCH BANK", key="btn_refresh_cb", use_container_width=True):
