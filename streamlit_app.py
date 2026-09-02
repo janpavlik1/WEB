@@ -777,3 +777,202 @@ with col_c:
                 }}
             </style>
         </head>
+        <body>
+            <div class="terminal-card">
+                <div class="tradingview-widget-container">
+                  <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
+                  {{
+                    "symbols": [ ["{current_asset['tv_symbol']}"] ],
+                    "chartOnly": false, 
+                    "width": "100%", 
+                    "height": "350", 
+                    "locale": "cs", 
+                    "colorTheme": "dark",
+                    "gridLineColor": "rgba(42, 46, 57, 0)", 
+                    "fontColor": "#787b86", 
+                    "isTransparent": true,
+                    "showFloatingTooltip": true, 
+                    "showVolume": false,
+                    "lineColor": "#2ecc71", 
+                    "topColor": "rgba(46, 204, 113, 0.15)", 
+                    "bottomColor": "rgba(46, 204, 113, 0)"
+                  }}
+                  </script>
+                </div>
+            </div>
+        </body>
+        </html>
+    """, height=395)
+
+    # --- NAČTENÍ JEDNOTNÉ ANALÝZY ZE ZDROJE REUTERS ---
+    data = fetch_institutional_analysis(current_asset["id"])
+
+    # --- 3. OKNO 1: AI SENTIMENT & TRŽNÍ BAROMETR ---
+    d_time = str(data.get("time", ""))
+    d_color = str(data.get("color", "#2ecc71"))
+    d_label = str(data.get("label", "BULLISH SENTIMENT"))
+    d_pct = str(data.get("score_pct", "76% NÁKUPNÍ PŘEVAHA"))
+    d_note = str(data.get("note", ""))
+    d_driver = str(data.get("macro_driver", ""))
+    d_highlights = data.get("highlights", [])
+
+    boxes_list = []
+    for idx, item in enumerate(d_highlights, start=1):
+        cz_t = str(item.get("cz", "")).replace('"', '&quot;')
+        orig_t = str(item.get("orig", "")).replace('"', '&quot;')
+        src_t = str(item.get("source", "REUTERS"))
+        b_str = (
+            f'<div style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06); '
+            f'border-radius: 8px; padding: 10px 14px; margin-top: 8px; text-align: left;">'
+            f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">'
+            f'<span style="color: #2ecc71; font-size: 10px; font-weight: 700; letter-spacing: 1px;">#{idx} {src_t}</span>'
+            f'</div>'
+            f'<div style="color: #eee; font-size: 13px; font-weight: 600; line-height: 1.4;">'
+            f'&quot;{cz_t}&quot;'
+            f'</div>'
+            f'<div style="color: #666; font-size: 11px; font-style: italic; margin-top: 2px;">'
+            f'{orig_t}'
+            f'</div>'
+            f'</div>'
+        )
+        boxes_list.append(b_str)
+
+    all_boxes_html = "".join(boxes_list)
+
+    sentiment_card_html = (
+        f'<div class="terminal-card">'
+        f'<div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 6px;">'
+        f'AI Sentiment Barometer &bull; {current_asset["name"].upper()} &bull; Live Feed ({d_time})'
+        f'</div>'
+        f'<div style="display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 4px;">'
+        f'<span style="color: {d_color}; font-weight: 900; font-size: 26px; letter-spacing: 2px;">{d_label}</span>'
+        f'<span style="background: rgba(46, 204, 113, 0.15); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.3); font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px; letter-spacing: 1px;">{d_pct}</span>'
+        f'</div>'
+        f'<p style="color: #ddd; margin-top: 6px; margin-bottom: 10px; font-size: 14px; line-height: 1.5;">'
+        f'{d_note}'
+        f'</p>'
+        f'<div style="background: rgba(46, 204, 113, 0.05); border: 1px solid rgba(46, 204, 113, 0.2); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; text-align: left; font-size: 12px; color: #bbb;">'
+        f'<span style="color: #2ecc71; font-weight: 700;">KLÍČOVÝ TAHOUŇ:</span> {d_driver}'
+        f'</div>'
+        f'{all_boxes_html}'
+        f'<div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 16px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px;">'
+        f'ZDROJ: REUTERS INSTITUTIONAL WIRE | PŘEKLAD: MYMEMORY API'
+        f'</div>'
+        f'</div>'
+    )
+    st.markdown(sentiment_card_html, unsafe_allow_html=True)
+
+    if st.button("AKTUALIZOVAT SENTIMENT", key="btn_refresh_sentiment", use_container_width=True):
+        fetch_institutional_analysis.clear()
+        st.rerun()
+
+    # --- 4. OKNO 2: HLOUBKOVÁ FUNDAMENTÁLNÍ ANALÝZA ---
+    deep = data.get("deep_macro", {})
+    
+    deep_macro_html = (
+        f'<div class="terminal-card" style="text-align: left;">'
+        f'<div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 4px; text-align: center;">'
+        f'Macroeconomic Intelligence &bull; 24h–72h Institutional Context'
+        f'</div>'
+        f'<div style="color: #ffffff; font-weight: 800; font-size: 22px; letter-spacing: 1px; margin-bottom: 14px; text-align: center;">'
+        f'HLOUBKOVÁ FUNDAMENTÁLNÍ ANALÝZA: {current_asset["name"].upper()}'
+        f'</div>'
+        f'<div style="background: rgba(255, 255, 255, 0.02); border-left: 3px solid #2ecc71; padding: 10px 14px; border-radius: 4px; margin-bottom: 10px;">'
+        f'<div style="color: #2ecc71; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px;">1. Měnová politika FEDu & Úrokové sazby</div>'
+        f'<div style="color: #ccc; font-size: 13px; line-height: 1.5;">{deep.get("fed_policy", "")}</div>'
+        f'</div>'
+        f'<div style="background: rgba(255, 255, 255, 0.02); border-left: 3px solid #2ecc71; padding: 10px 14px; border-radius: 4px; margin-bottom: 10px;">'
+        f'<div style="color: #2ecc71; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px;">2. Mezitržní vztahy (Dolar DXY & Výnosy dluhopisů)</div>'
+        f'<div style="color: #ccc; font-size: 13px; line-height: 1.5;">{deep.get("intermarket", "")}</div>'
+        f'</div>'
+        f'<div style="background: rgba(255, 255, 255, 0.02); border-left: 3px solid #2ecc71; padding: 10px 14px; border-radius: 4px; margin-bottom: 10px;">'
+        f'<div style="color: #2ecc71; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px;">3. Institucionální toky & Likvidita trhu</div>'
+        f'<div style="color: #ccc; font-size: 13px; line-height: 1.5;">{deep.get("liquidity", "")}</div>'
+        f'</div>'
+        f'<div style="background: rgba(46, 204, 113, 0.05); border: 1px solid rgba(46, 204, 113, 0.3); padding: 12px 16px; border-radius: 8px; margin-top: 14px;">'
+        f'<div style="color: #2ecc71; font-size: 12px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px;">Taktické shrnutí pro obchodování</div>'
+        f'<div style="color: #eee; font-size: 13px; line-height: 1.5; font-weight: 500;">{deep.get("tactical_view", "")}</div>'
+        f'</div>'
+        f'<div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 16px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px; text-align: center;">'
+        f'ANALÝZA ZALOŽENA NA GLOBÁLNÍCH TOZÍCH REUTERS & FED MACRO MODELU'
+        f'</div>'
+        f'</div>'
+    )
+    st.markdown(deep_macro_html, unsafe_allow_html=True)
+
+    if st.button("AKTUALIZOVAT HLOUBKOVOU ANALÝZU", key="btn_refresh_deep", use_container_width=True):
+        fetch_institutional_analysis.clear()
+        st.rerun()
+
+    # --- 5. OKNO 3: CENTRÁLNÍ BANKY & BÍLÝ TEXT V ZELENÝCH ŠTÍTCÍCH ---
+    cb_rows_list = []
+    for cb in CENTRAL_BANKS:
+        row_str = (
+            f'<div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); '
+            f'border-radius: 10px; padding: 14px 16px; margin-top: 8px; display: flex; justify-content: space-between; '
+            f'align-items: center; text-align: left;">'
+            f'<div style="flex: 1.2;">'
+            f'<div style="display: flex; align-items: center; gap: 6px;">'
+            f'<span style="color: #fff; font-size: 15px; font-weight: 800;">{cb["code"]}</span>'
+            f'<span style="color: #888; font-size: 12px;">({cb["country"]})</span>'
+            f'</div>'
+            f'<div style="color: #666; font-size: 11px; margin-top: 2px;">{cb["name"]}</div>'
+            f'<div style="color: #555; font-size: 10px; font-style: italic;">{cb["rate_name"]}</div>'
+            f'</div>'
+            
+            # Sazba a zelený rámeček s BÍLÝM TEXTEM
+            f'<div style="flex: 1.1; text-align: center;">'
+            f'<div style="color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px;">Aktuální sazba</div>'
+            f'<div style="color: #2ecc71; font-size: 17px; font-weight: 900; font-variant-numeric: tabular-nums;">{cb["rate"]}</div>'
+            f'<div style="display: inline-block; background: rgba(46, 204, 113, 0.18); border: 1px solid rgba(46, 204, 113, 0.45); '
+            f'border-radius: 6px; padding: 3px 8px; margin-top: 4px; color: #ffffff; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;">'
+            f'📅 {cb["next_meeting"]}'
+            f'</div>'
+            f'</div>'
+            
+            # Pravděpodobnost a konsensus
+            f'<div style="flex: 1.4; text-align: center; padding: 0 10px;">'
+            f'<div style="color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px;">Tržní konsensus ({cb["source_tag"]})</div>'
+            f'<div style="color: {cb["status_color"]}; font-size: 12px; font-weight: 800;">{cb["consensus"]}</div>'
+            f'<div style="display: flex; justify-content: center; gap: 8px; color: #888; font-size: 10px; margin-top: 4px;">'
+            f'<span>Snížení: <b style="color: #2ecc71;">{cb["cut_prob"]}%</b></span>'
+            f'<span>Hold: <b style="color: #ffffff;">{cb["hold_prob"]}%</b></span>'
+            f'<span>Zvýšení: <b style="color: #e74c3c;">{cb["hike_prob"]}%</b></span>'
+            f'</div>'
+            f'</div>'
+            
+            # Tlačítko na oficiální web
+            f'<div style="flex: 0.7; text-align: right;">'
+            f'<a href="{cb["url"]}" target="_blank" style="display: inline-block; background: rgba(46, 204, 113, 0.15); '
+            f'color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.4); border-radius: 6px; padding: 6px 12px; '
+            f'font-size: 11px; font-weight: 700; text-decoration: none; text-transform: uppercase; letter-spacing: 0.5px;">'
+            f'OFICIÁLNÍ WEB'
+            f'</a>'
+            f'</div>'
+            f'</div>'
+        )
+        cb_rows_list.append(row_str)
+
+    all_cb_rows = "".join(cb_rows_list)
+
+    cb_card_html = (
+        f'<div class="terminal-card">'
+        f'<div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 4px;">'
+        f'Global Monetary Policy Tracker &bull; CME FedWatch & InvestingLive OIS Model'
+        f'</div>'
+        f'<div style="color: #ffffff; font-weight: 800; font-size: 22px; letter-spacing: 1px; margin-bottom: 12px;">'
+        f'CENTRÁLNÍ BANKY & VÝVOJ ÚROKOVÝCH SAZEB'
+        f'</div>'
+        f'<p style="color: #999; font-size: 13px; margin-bottom: 14px;">'
+        f'Přehled oficiálních úrokových sazeb hlavních světových ekonomik a tržní pravděpodobnosti jejich úpravy.'
+        f'</p>'
+        f'{all_cb_rows}'
+        f'<div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 16px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px; text-align: center;">'
+        f'ZDROJ: OFICIÁLNÍ WEBY CENTRÁLNÍCH BANK | CME FEDWATCH (FED) & INVESTINGLIVE OIS SWAPS MODEL'
+        f'</div>'
+        f'</div>'
+    )
+    st.markdown(cb_card_html, unsafe_allow_html=True)
+
+    if st.button("AKTUALIZOVAT SAZBY CENTRÁLNÍCH BANK", key="btn_refresh_cb", use_container_width=True):
+        st.rerun()
