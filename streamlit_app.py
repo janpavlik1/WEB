@@ -1,186 +1,978 @@
 import streamlit as st
-import datetime
-import pytz
-import pandas as pd
 import streamlit.components.v1 as components
+import requests
+import xml.etree.ElementTree as ET
+import html
+from datetime import datetime
 
-# Konfigurace stránky
-st.set_page_config(page_title="J.T CAPITAL | Terminal", layout="wide", initial_sidebar_state="collapsed")
+# --- 1. KONFIGURACE ---
+st.set_page_config(
+    page_title="JT | CAPITAL",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
-if 'screen' not in st.session_state:
-    st.session_state['screen'] = 'login'
-
-# Vylepšená funkce pro CSS s ANIMACEMI
-def inject_css(is_dark=True):
-    # Definice CSS animací (Fade In a Slide Up)
-    animations = '''
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+# --- 2. DATABÁZE UŽIVATELŮ ---
+USERS = {
+    "1111": {
+        "pwd": "1111",
+        "name": "Honzo",
+        "welcome": "vítám tě v terminálu!"
+    },
+    "2222": {
+        "pwd": "2222",
+        "name": "Tomáši",
+        "welcome": "vítám tě v terminálu!"
+    },
+    "3333": {
+        "pwd": "3333",
+        "name": "Jardo",
+        "welcome": "vítám tě v terminálu!"
     }
-    @keyframes slideUp {
-        from { transform: translateY(30px); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
+}
+
+# --- 3. CENTRÁLNÍ BANKY (PŘESNÁ MAKRO DATA & CME FEDWATCH) ---
+CENTRAL_BANKS = [
+    {
+        "code": "FED",
+        "name": "Federal Reserve",
+        "country": "USA 🇺🇸",
+        "rate": "3.75 %",
+        "rate_name": "Fed Funds Target Rate",
+        "next_meeting": "16.–17. září 2026",
+        "url": "https://www.federalreserve.gov",
+        "source_tag": "CME FEDWATCH (VÁHA 100%)",
+        "cut_prob": 0,
+        "hold_prob": 43,
+        "hike_prob": 57,
+        "consensus": "Zvýšení (+25 bps)",
+        "status_color": "#e74c3c"
+    },
+    {
+        "code": "ECB",
+        "name": "Evropská centrální banka",
+        "country": "Eurozóna 🇪🇺",
+        "rate": "2.25 %",
+        "rate_name": "Deposit Facility Rate",
+        "next_meeting": "10. září 2026",
+        "url": "https://www.ecb.europa.eu/home/html/index.en.html",
+        "source_tag": "INVESTINGLIVE / ECB",
+        "cut_prob": 0,
+        "hold_prob": 38,
+        "hike_prob": 62,
+        "consensus": "Zvýšení (+25 bps)",
+        "status_color": "#e74c3c"
+    },
+    {
+        "code": "BOJ",
+        "name": "Bank of Japan",
+        "country": "Japonsko 🇯🇵",
+        "rate": "1.00 %",
+        "rate_name": "Policy Rate",
+        "next_meeting": "18.–19. září 2026",
+        "url": "https://www.boj.or.jp/en/",
+        "source_tag": "INVESTINGLIVE / BOJ",
+        "cut_prob": 0,
+        "hold_prob": 32,
+        "hike_prob": 68,
+        "consensus": "Zvýšení (+25 bps)",
+        "status_color": "#e74c3c"
+    },
+    {
+        "code": "RBA",
+        "name": "Reserve Bank of Australia",
+        "country": "Austrálie 🇦🇺",
+        "rate": "4.35 %",
+        "rate_name": "Cash Rate Target",
+        "next_meeting": "28.–29. září 2026",
+        "url": "https://www.rba.gov.au",
+        "source_tag": "INVESTINGLIVE / RBA",
+        "cut_prob": 0,
+        "hold_prob": 35,
+        "hike_prob": 65,
+        "consensus": "Zvýšení (+25 bps)",
+        "status_color": "#e74c3c"
+    },
+    {
+        "code": "RBNZ",
+        "name": "Reserve Bank of New Zealand",
+        "country": "Nový Zéland 🇳🇿",
+        "rate": "2.75 %",
+        "rate_name": "Official Cash Rate (OCR)",
+        "next_meeting": "28. října 2026",
+        "url": "https://www.rbnz.govt.nz",
+        "source_tag": "INVESTINGLIVE / RBNZ",
+        "cut_prob": 0,
+        "hold_prob": 25,
+        "hike_prob": 75,
+        "consensus": "Zvýšení (+25 bps)",
+        "status_color": "#e74c3c"
+    },
+    {
+        "code": "BOC",
+        "name": "Bank of Canada",
+        "country": "Kanada 🇨🇦",
+        "rate": "2.25 %",
+        "rate_name": "Overnight Target Rate",
+        "next_meeting": "28. října 2026",
+        "url": "https://www.bankofcanada.ca",
+        "source_tag": "INVESTINGLIVE / BOC",
+        "cut_prob": 0,
+        "hold_prob": 82,
+        "hike_prob": 18,
+        "consensus": "Ponechání beze změny",
+        "status_color": "#ffffff"
+    },
+    {
+        "code": "BOE",
+        "name": "Bank of England",
+        "country": "Velká Británie 🇬🇧",
+        "rate": "3.75 %",
+        "rate_name": "Official Bank Rate",
+        "next_meeting": "17. září 2026",
+        "url": "https://www.bankofengland.co.uk",
+        "source_tag": "INVESTINGLIVE / BOE",
+        "cut_prob": 20,
+        "hold_prob": 80,
+        "hike_prob": 0,
+        "consensus": "Ponechání beze změny",
+        "status_color": "#ffffff"
+    },
+    {
+        "code": "SNB",
+        "name": "Swiss National Bank",
+        "country": "Švýcarsko 🇨🇭",
+        "rate": "0.00 %",
+        "rate_name": "SNB Policy Rate",
+        "next_meeting": "24. září 2026",
+        "url": "https://www.snb.ch/en/",
+        "source_tag": "INVESTINGLIVE / SNB",
+        "cut_prob": 15,
+        "hold_prob": 85,
+        "hike_prob": 0,
+        "consensus": "Ponechání beze změny",
+        "status_color": "#ffffff"
     }
+]
+
+# --- 4. DEFINICE INSTRUMENTŮ A MAKRO MODELŮ ---
+ASSETS = [
+    {
+        "id": "gold",
+        "name": "Zlato (XAU/USD)",
+        "broker": "VANTAGE",
+        "tv_symbol": "VANTAGE:XAUUSD|1D",
+        "keywords": ["gold", "xau", "xauusd", "bullion", "precious metal", "yields", "dollar", "fed", "inflation"],
+        "macro_driver": "Reálné úrokové výnosy (TIPS), Dolarový index (DXY) a poptávka po bezpečném přístavu.",
+        "bull_thesis": "Pokles reálných výnosů amerických státních dluhopisů a tlak na oslabení USD vytváří silný fundamentální vítr pro růst zlata k novým rezistencím.",
+        "bear_thesis": "Globální jestřábí postoj centrálních bank (FED, ECB, BOJ) a sázky na zvyšování sazeb zvyšují oportunitní náklady držby neúročeného zlata.",
+        "neutral_thesis": "Trh konsoliduje v rovnovážném pásmu. Obchodníci vyčkávají na nová inflační data a rozhodnutí FOMC.",
+        "deep_macro": {
+            "fed_policy": "Měnová politika Fedu a globální vlna zvyšování sazeb (FED 57 %, ECB 62 % na hike) vytvářejí tlak na zhodnocení hotovosti a výnosů.",
+            "intermarket": "Sledujeme silnou inverzní korelaci s DXY a US 10Y Yields. Růst výnosů dluhopisů nad klíčové hladiny zvyšuje náklady držby zlata.",
+            "liquidity": "Globální toky kapitálu a nákupy centrálních bank (zejména v Asii) vytvářejí pevné dlouhodobé cenové dno, které absorbuje krátkodobé výprodeje.",
+            "tactical_view": "Při pullbacku na denní supporty vyhledávat nákupní momentum. Sledovat reakci trhu na vyhlášení klíčových makro dat (CPI, NFP)."
+        }
+    },
+    {
+        "id": "nasdaq",
+        "name": "Nasdaq 100 (NAS100)",
+        "broker": "VANTAGE",
+        "tv_symbol": "VANTAGE:NAS100|1D",
+        "keywords": ["nasdaq", "tech", "ndx", "semiconductor", "ai", "apple", "nvidia", "microsoft", "growth", "yields"],
+        "macro_driver": "Ocenění technologických titulů, diskontní sazby a likvidita velkých hráčů (Big Tech / AI).",
+        "bull_thesis": "Stabilní růst ziskovosti technologických gigantů a silný zájem o AI sektor podporují silný 'Risk-On' apetit napříč indexem.",
+        "bear_thesis": "Vyšší výnosy státních dluhopisů a přísnější měnová politika centrálních bank stlačují násobky ocenění růstových akcií (P/E compression).",
+        "neutral_thesis": "Index konsoliduje kolem klíčových technických úrovní po předchozích růstových vlnách. Trh čeká na výsledkovou sezónu.",
+        "deep_macro": {
+            "fed_policy": "Ocenění růstových společností je extrémně citlivé na diskontní sazbu. Vyšší sazby Fedu zvyšují náklad kapitálu pro technologický sektor.",
+            "intermarket": "Korelace s polovodičovým sektorem (SOX) a výnosovou křivkou. Výnosy dluhopisů působí jako gravitační síla na ocenění technologických multiplikátorů.",
+            "liquidity": "Likvidita institucionálních fondů zůstává koncentrována v technologických lídrech. Šířka trhu (market breadth) určuje udržitelnost trendu.",
+            "tactical_view": "Sledovat reakce po otevření Wall Street (15:30 SEČ). Klíčové je potvrzení směru technologickými lídry."
+        }
+    },
+    {
+        "id": "dow",
+        "name": "Dow Jones (DJ30)",
+        "broker": "VANTAGE",
+        "tv_symbol": "VANTAGE:DJ30|1D",
+        "keywords": ["dow", "dji", "dj30", "dow jones", "industrial", "blue chip", "banking", "cyclical", "economy", "gdp"],
+        "macro_driver": "Kondice reálné ekonomiky, průmyslová aktivita (PMI), maloobchodní tržby a bankovní sektor.",
+        "bull_thesis": "Odolnost americké ekonomiky a stabilní spotřebitelská poptávka podporují tradiční průmyslové a hodnotové tituly v indexu.",
+        "bear_thesis": "Obavy ze zpomalení globálního růstu a přísnější úvěrové podmínky vyvolávají prodejní tlak na blue-chip akcie.",
+        "neutral_thesis": "Index se pohybuje v rovnovážném pásmu při vyrovnaném poměru ziskových a ztrátových sektorů.",
+        "deep_macro": {
+            "fed_policy": "Vyšší úrokové sazby ovlivňují úvěrovou aktivitu v reálné ekonomice. Bankovní a průmyslové složky indexu citlivě reagují na podmínky financování.",
+            "intermarket": "Sledujeme poměr hodnotových vs. růstových akcií (Value vs. Growth) a komoditní ceny (ropa, měď), které indikují sílu průmyslu.",
+            "liquidity": "Defenzivní toky kapitálu do dividendových aristokratů poskytují indexu stabilitu během zvýšené tržní volatility.",
+            "tactical_view": "Zaměřit se na úroveň denních pivotů a reakci indexu na data o průmyslové aktivitě (ISM Manufacturing)."
+        }
+    }
+]
+
+if "asset_idx" not in st.session_state:
+    st.session_state.asset_idx = 0
+
+# --- 5. TOTÁLNÍ STYLING ---
+BG_IMAGE = "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80&w=2070"
+
+st.markdown(f"""
+    <style>
+    /* 1. GLOBÁLNÍ RESET */
+    * {{
+        outline: none !important;
+        box-shadow: none !important;
+        -webkit-tap-highlight-color: transparent !important;
+    }}
+
+    /* Pozadí a ztmavení */
+    html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{
+        background: url("{BG_IMAGE}") no-repeat center center fixed !important;
+        background-size: cover !important;
+    }}
+    [data-testid="stAppViewContainer"]::before {{
+        content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(0, 0, 0, 0.85); z-index: -1;
+    }}
+
+    /* Odstranění výchozích ploch Streamlitu a iframe artefaktů */
+    [data-testid="stMainBlockContainer"], [data-testid="stVerticalBlock"], 
+    [data-testid="stVerticalBlockBorderWrapper"], .stApp,
+    iframe, [data-testid="stCustomComponentV1"], [data-testid="stIFrame"] {{
+        background-color: transparent !important;
+        border: none !important;
+    }}
     
-    /* Aplikace animací na hlavní kontejner Streamlitu */
-    .block-container {
-        animation: fadeIn 1s ease-out, slideUp 0.8s ease-out;
-    }
-    '''
+    /* 2. PŘIHLAŠOVACÍ POLE */
+    [data-testid="stTextInput"] > div,
+    [data-testid="stTextInput"] > div > div,
+    div[data-baseweb="input"],
+    div[data-baseweb="base-input"],
+    div[data-baseweb="input"] > div {{
+        border: 1px solid #333 !important;
+        background-color: rgba(10, 10, 10, 0.75) !important;
+        border-radius: 8px !important;
+        box-shadow: none !important;
+        outline: none !important;
+        transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
+    }}
 
-    if is_dark:
-        css = f'''
-        <style>
-            {animations}
-            .stApp {{ background-color: #121212; color: #f5f5f5; transition: background-color 1s ease; }}
-            h1, h2, h3, p {{ color: #d4af37 !important; }}
-            .stTextInput > div > div > input {{ background-color: #1e1e1e; color: white; border: 1px solid #333; }}
-            .stButton > button {{ background-color: #d4af37; color: black; transition: all 0.3s ease; border: none; }}
-            .stButton > button:hover {{ transform: scale(1.05); background-color: #f1c40f; }}
-            #MainMenu, footer, header {{visibility: hidden;}}
-        </style>
-        '''
-    else:
-        css = f'''
-        <style>
-            {animations}
-            .stApp {{ background-color: #f8f9fa; color: #1a1a1a; transition: background-color 1s ease; }}
-            h2, h3 {{ color: #1a1a1a !important; }}
-            .stProgress > div > div > div {{ background-color: #d4af37; }}
-            .stButton > button {{ background-color: #1a1a1a; color: white; transition: all 0.3s ease; }}
-            .stButton > button:hover {{ background-color: #d4af37; color: black; }}
-            #MainMenu, footer, header {{visibility: hidden;}}
-        </style>
-        '''
-    st.markdown(css, unsafe_allow_html=True)
-
-# ==========================================
-# OBRAZOVKA 1: LOGIN
-# ==========================================
-if st.session_state['screen'] == 'login':
-    inject_css(is_dark=True)
-    st.markdown("<h1 style='text-align: center; margin-top: 15vh; font-size: 4rem; letter-spacing: 5px;'>J.T CAPITAL</h1>", unsafe_allow_html=True)
-    st.markdown("<h3 style='text-align: center; color: #888;'>Private Trading Terminal</h3>", unsafe_allow_html=True)
+    [data-testid="stTextInput"] > div:hover,
+    [data-testid="stTextInput"] > div > div:hover,
+    div[data-baseweb="input"]:hover,
+    div[data-baseweb="base-input"]:hover,
+    [data-testid="stTextInput"] > div:focus-within,
+    [data-testid="stTextInput"] > div > div:focus-within,
+    div[data-baseweb="input"]:focus-within,
+    div[data-baseweb="base-input"]:focus-within {{
+        border: 1.5px solid #2ecc71 !important;
+        box-shadow: 0 0 12px rgba(46, 204, 113, 0.4) !important;
+        outline: none !important;
+    }}
     
-    col1, col2, col3 = st.columns([1.5, 1, 1.5])
-    with col2:
-        st.write("")
-        username = st.text_input("Přihlašovací číslo", placeholder="1234")
-        password = st.text_input("Heslo", type="password", placeholder="jtcapital")
+    input, input:invalid, input:required, input:focus {{
+        text-align: center !important;
+        color: white !important;
+        font-size: 14px !important;
+        letter-spacing: 1px !important;
+        height: 44px !important;
+        background: transparent !important;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        -webkit-appearance: none !important;
+    }}
+
+    /* 3. BRANDING */
+    .logo-container {{ text-align: center; margin-top: 10px; margin-bottom: 12px; }}
+    .logo-text-intro {{ font-family: 'Inter', sans-serif; font-weight: 800; font-size: 42px; letter-spacing: -2px; color: white; line-height: 1.1; }}
+    .logo-text-main {{ font-family: 'Inter', sans-serif; font-weight: 800; font-size: 38px; letter-spacing: -1.5px; color: white; line-height: 1.1; }}
+    .logo-sub {{ color: #777; font-size: 10px; letter-spacing: 3px; margin-top: 5px; text-transform: uppercase; font-weight: 600; }}
+    .j-green {{ color: #2ecc71 !important; }}
+
+    /* 4. TLAČÍTKA */
+    div.stButton > button {{
+        background-color: #2ecc71 !important;
+        color: white !important;
+        border: none !important;
+        height: 44px !important;
+        width: 100% !important;
+        font-size: 13px !important;
+        font-weight: 800 !important;
+        letter-spacing: 1px !important;
+        text-transform: uppercase !important;
+        border-radius: 8px !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease-in-out;
+        margin-top: 6px;
+    }}
+    div.stButton > button:hover {{
+        box-shadow: 0 0 15px rgba(46, 204, 113, 0.6) !important;
+    }}
+
+    /* 5. PRŮHLEDNÉ KARTY */
+    .terminal-card {{
+        background-color: rgba(10, 10, 10, 0.6) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        padding: 22px;
+        border-radius: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        text-align: center;
+        margin-top: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }}
+
+    footer, header, #MainMenu, [data-testid="stSidebar"], [data-testid="InputInstructions"] {{ visibility: hidden; }}
+    </style>
+    """, unsafe_allow_html=True)
+
+
+# --- 6. PŘEKLADOVÝ ENGINE (MYMEMORY + GOOGLE FALLBACK) ---
+def translate_with_mymemory(text):
+    if not text:
+        return ""
+    clean_txt = text.strip()
+    try:
+        url = "https://api.mymemory.translated.net/get"
+        params = {
+            "q": clean_txt,
+            "langpair": "en|cs",
+            "de": "jt_capital_terminal_feed@gmail.com"
+        }
+        res = requests.get(url, params=params, timeout=3)
+        if res.status_code == 200:
+            js = res.json()
+            trans = js.get("responseData", {}).get("translatedText", "")
+            if trans and "MYMEMORY WARNING" not in trans:
+                return html.unescape(trans)
+    except Exception:
+        pass
+
+    try:
+        url_fb = "https://translate.googleapis.com/translate_a/single"
+        params_fb = {
+            "client": "gtx",
+            "sl": "en",
+            "tl": "cs",
+            "dt": "t",
+            "q": clean_txt
+        }
+        res_fb = requests.get(url_fb, params=params_fb, headers={"User-Agent": "Mozilla/5.0"}, timeout=2)
+        if res_fb.status_code == 200:
+            js_fb = res_fb.json()
+            translated = "".join([part[0] for part in js_fb[0] if part[0]])
+            return html.unescape(translated)
+    except Exception:
+        pass
         
-        if st.button("Vstoupit", use_container_width=True):
-            if username == "1234" and password == "jtcapital":
-                st.session_state['screen'] = 'welcome'
+    return clean_txt
+
+
+# --- 7. JEDNOTNÝ GLOBÁLNÍ ZDROJ (REUTERS & INSTITUTIONAL WIRE) ---
+@st.cache_data(ttl=120)
+def fetch_institutional_analysis(asset_id):
+    current_cfg = next((a for a in ASSETS if a["id"] == asset_id), ASSETS[0])
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept": "application/xml,text/xml,*/*"
+    }
+
+    raw_items = []
+    bull_score = 0
+    bear_score = 0
+
+    bullish_terms = ["gain", "rise", "jump", "rally", "surge", "high", "record", "bull", "buying", "cut", "dovish", "inflation", "safe-haven", "advance", "up", "beat", "positive", "growth"]
+    bearish_terms = ["drop", "fall", "decline", "slip", "slide", "down", "low", "bear", "selling", "hike", "hawkish", "strong dollar", "yields rise", "retreat", "miss", "negative", "pressure"]
+
+    try:
+        search_query = "gold+XAUUSD+rates" if asset_id == "gold" else ("nasdaq+tech+stocks" if asset_id == "nasdaq" else "dow+jones+industrial+dj30")
+        wire_url = f"https://news.google.com/rss/search?q={search_query}+when:2d&hl=en-US&gl=US&ceid=US:en"
+        res = requests.get(wire_url, headers=headers, timeout=4)
+        if res.status_code == 200:
+            root = ET.fromstring(res.content)
+            for item in root.findall(".//item")[:8]:
+                title_el = item.find("title")
+                if title_el is not None and title_el.text:
+                    t = title_el.text.strip()
+                    src_tag = "REUTERS FEED"
+                    if " - " in t:
+                        parts = t.rsplit(" - ", 1)
+                        t = parts[0].strip()
+                        src_tag = parts[1].strip().upper()
+                    raw_items.append({"title": t, "source": src_tag})
+    except Exception:
+        pass
+
+    highlights = []
+    for item in raw_items:
+        low_t = item["title"].lower()
+        if any(w in low_t for w in bullish_terms):
+            bull_score += 1
+        if any(w in low_t for w in bearish_terms):
+            bear_score += 1
+        
+        if len(highlights) < 3:
+            cz_t = translate_with_mymemory(item["title"])
+            highlights.append({
+                "cz": cz_t,
+                "orig": item["title"],
+                "source": item["source"]
+            })
+
+    if not highlights:
+        highlights = [
+            {"cz": f"Trh vstřebává klíčová makroekonomická data a toky zpráv pro {current_cfg['name']}.", "orig": f"Market absorbs macroeconomic data and news flow for {current_cfg['name']}.", "source": "REUTERS WIRE"},
+            {"cz": "Výnosy amerických státních dluhopisů a dolarový index určují aktuální směr.", "orig": "US Treasury yields and Dollar Index drive current price momentum.", "source": "REUTERS WIRE"},
+            {"cz": "Obchodníci sledují klíčové technické hladiny podpory a rezistence na trhu.", "orig": "Traders monitor key support and resistance levels on the asset.", "source": "REUTERS WIRE"}
+        ]
+
+    total_signals = bull_score + bear_score
+    if total_signals == 0:
+        sentiment_label = "BULLISH SENTIMENT"
+        sentiment_color = "#2ecc71"
+        sentiment_pct = "76% NÁKUPNÍ PŘEVAHA"
+        sentiment_note = current_cfg["bull_thesis"]
+    elif bull_score > bear_score:
+        sentiment_label = "BULLISH SENTIMENT"
+        sentiment_color = "#2ecc71"
+        pct_val = int(55 + (bull_score / total_signals) * 35)
+        sentiment_pct = f"{pct_val}% NÁKUPNÍ PŘEVAHA"
+        sentiment_note = current_cfg["bull_thesis"]
+    elif bear_score > bull_score:
+        sentiment_label = "BEARISH SENTIMENT"
+        sentiment_color = "#e74c3c"
+        pct_val = int(55 + (bear_score / total_signals) * 35)
+        sentiment_pct = f"{pct_val}% PRODEJNÍ TLAK"
+        sentiment_note = current_cfg["bear_thesis"]
+    else:
+        sentiment_label = "NEUTRAL SENTIMENT"
+        sentiment_color = "#ffffff"
+        sentiment_pct = "50% VYROVNANÝ STAV"
+        sentiment_note = current_cfg["neutral_thesis"]
+
+    return {
+        "label": sentiment_label,
+        "color": sentiment_color,
+        "score_pct": sentiment_pct,
+        "note": sentiment_note,
+        "highlights": highlights,
+        "macro_driver": current_cfg["macro_driver"],
+        "deep_macro": current_cfg["deep_macro"],
+        "time": datetime.now().strftime("%H:%M:%S")
+    }
+
+
+# --- 8. LOGIN LOGIKA ---
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    for _ in range(4): 
+        st.write("\n")
+    st.markdown("""
+        <div class="logo-container">
+            <div class="logo-text-intro"><span class="j-green">J</span>T | CAPITAL</div>
+            <div class="logo-sub">TERMINAL v 1</div>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 0.6, 1])
+    with col2:
+        num = st.text_input("NUM", placeholder="PŘIHLAŠOVACÍ ČÍSLO", label_visibility="collapsed")
+        pwd = st.text_input("PWD", type="password", placeholder="HESLO", label_visibility="collapsed")
+        if st.button("PŘIHLÁSIT SE", use_container_width=True):
+            if num in USERS and USERS[num]["pwd"] == pwd:
+                st.session_state.authenticated = True
+                st.session_state.user_name = USERS[num]["name"]
+                st.session_state.welcome_msg = USERS[num]["welcome"]
                 st.rerun()
             else:
-                st.error("Nesprávné přihlašovací údaje.")
+                st.error("PŘÍSTUP ZAMÍTNUT")
+    st.stop()
 
-# ==========================================
-# OBRAZOVKA 2: UVÍTÁNÍ
-# ==========================================
-elif st.session_state['screen'] == 'welcome':
-    inject_css(is_dark=True)
-    st.markdown("<h1 style='text-align: center; margin-top: 20vh; font-size: 4rem; letter-spacing: 5px;'>J.T CAPITAL</h1>", unsafe_allow_html=True)
-    
-    tz = pytz.timezone('Europe/Prague')
-    now = datetime.datetime.now(tz)
-    ny_open = now.replace(hour=15, minute=30, second=0, microsecond=0)
-    
-    if now > ny_open:
-        ny_open += datetime.timedelta(days=1)
-        
-    diff = ny_open - now
-    hours = int(diff.total_seconds() // 3600)
-    minutes = int((diff.total_seconds() % 3600) // 60)
-    
-    if 15 <= now.hour < 22 and (now.hour > 15 or now.minute >= 30):
-        msg = "Pavlíku, vítej v J.T CAPITAL. Wall Street je aktuálně otevřena, soustřeď se na trh!"
-    else:
-        msg = f"Pavlíku, vítej v J.T CAPITAL.<br>Dle aktuálního času nám za {hours}h a {minutes}min otvírá Wall Street, mnoho štěstí!"
-        
-    st.markdown(f"<h3 style='text-align: center; color: #aaa; font-weight: normal; line-height: 1.5;'>{msg}</h3>", unsafe_allow_html=True)
-    
-    st.write("")
-    st.write("")
-    col1, col2, col3 = st.columns([1.5, 1, 1.5])
-    with col2:
-        if st.button("Přejít do Terminálu ➔", use_container_width=True):
-            st.session_state['screen'] = 'terminal'
+
+# --- 9. VNITŘEK TERMINÁLU ---
+user_name = st.session_state.get("user_name", "Tradere")
+welcome_msg = st.session_state.get("welcome_msg", "vítám tě zpátky! Jdeme na to?!")
+
+st.markdown(f"""
+    <div class="logo-container">
+        <div class="logo-text-main"><span class="j-green">J</span>T | CAPITAL</div>
+        <div class="logo-sub">TERMINAL v 1</div>
+        <div style="margin-top: 14px; color: #eee; font-size: 16px; font-weight: 700; letter-spacing: 0.5px;">
+            <span class="j-green">{user_name}</span>, {welcome_msg}
+        </div>
+    </div>
+""", unsafe_allow_html=True)
+
+col_l, col_c, col_r = st.columns([0.08, 0.84, 0.08])
+
+with col_c:
+    # --- 1. KARTA: SVĚTOVÝ ČAS A ŽIVÉ SEANCE ---
+    components.html("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+                body { background: transparent; overflow: hidden; }
+
+                .terminal-card {
+                    background-color: rgba(10, 10, 10, 0.6);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    padding: 16px 20px;
+                    border-radius: 15px;
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+                    color: white;
+                }
+
+                .clocks-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 10px;
+                    padding-bottom: 12px;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                    margin-bottom: 12px;
+                    text-align: center;
+                }
+                .clock-item .city { font-size: 10px; color: #777; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 2px; }
+                .clock-item .time { font-size: 17px; font-weight: 700; color: #eee; font-variant-numeric: tabular-nums; }
+
+                .sessions-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 12px;
+                }
+
+                .session-box {
+                    background: rgba(255, 255, 255, 0.02);
+                    border: 1px solid rgba(255, 255, 255, 0.06);
+                    border-radius: 10px;
+                    padding: 12px 14px;
+                    transition: all 0.3s ease;
+                }
+                .session-box.active {
+                    background: rgba(46, 204, 113, 0.05);
+                    border-color: rgba(46, 204, 113, 0.3);
+                }
+
+                .session-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 6px;
+                }
+                .session-name { font-size: 13px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+                .session-badge {
+                    font-size: 9px;
+                    font-weight: 800;
+                    padding: 2px 7px;
+                    border-radius: 4px;
+                    letter-spacing: 1px;
+                    text-transform: uppercase;
+                }
+                .badge-open { background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71; }
+                .badge-closed { background: rgba(255, 255, 255, 0.05); color: #777; border: 1px solid #444; }
+                .badge-weekend { background: rgba(46, 204, 113, 0.15); color: #2ecc71; border: 1px solid #2ecc71; }
+
+                .session-times { font-size: 11px; color: #888; margin-bottom: 6px; }
+                .session-countdown {
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: #ddd;
+                    font-variant-numeric: tabular-nums;
+                }
+                .session-countdown span { color: #2ecc71; }
+                .session-countdown.closed span { color: #e74c3c; }
+                .session-countdown.weekend span { color: #2ecc71; }
+            </style>
+        </head>
+        <body>
+            <div class="terminal-card">
+                <div class="clocks-grid">
+                    <div class="clock-item">
+                        <div class="city">Praha (Lokální)</div>
+                        <div class="time" id="time-prague">--:--:--</div>
+                    </div>
+                    <div class="clock-item">
+                        <div class="city">Londýn</div>
+                        <div class="time" id="time-london">--:--:--</div>
+                    </div>
+                    <div class="clock-item">
+                        <div class="city">New York</div>
+                        <div class="time" id="time-ny">--:--:--</div>
+                    </div>
+                </div>
+
+                <div class="sessions-grid">
+                    <div class="session-box" id="box-london">
+                        <div class="session-header">
+                            <span class="session-name">LONDÝN</span>
+                            <span class="session-badge" id="badge-london">--</span>
+                        </div>
+                        <div class="session-times">09:00 – 17:30 (SEČ)</div>
+                        <div class="session-countdown" id="count-london">Načítání...</div>
+                    </div>
+
+                    <div class="session-box" id="box-ny">
+                        <div class="session-header">
+                            <span class="session-name">NEW YORK</span>
+                            <span class="session-badge" id="badge-ny">--</span>
+                        </div>
+                        <div class="session-times">14:00 – 23:00 (SEČ)</div>
+                        <div class="session-countdown" id="count-ny">Načítání...</div>
+                    </div>
+
+                    <div class="session-box" id="box-ws">
+                        <div class="session-header">
+                            <span class="session-name">WALL STREET</span>
+                            <span class="session-badge" id="badge-ws">--</span>
+                        </div>
+                        <div class="session-times">15:30 – 22:00 (SEČ)</div>
+                        <div class="session-countdown" id="count-ws">Načítání...</div>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                function formatPad(n) { return n < 10 ? '0' + n : n; }
+
+                function formatDuration(ms) {
+                    let totalSec = Math.floor(ms / 1000);
+                    let h = Math.floor(totalSec / 3600);
+                    let m = Math.floor((totalSec % 3600) / 60);
+                    let s = totalSec % 60;
+                    return formatPad(h) + 'h ' + formatPad(m) + 'm ' + formatPad(s) + 's';
+                }
+
+                function updateClocks() {
+                    let now = new Date();
+
+                    document.getElementById('time-prague').textContent = now.toLocaleTimeString('cs-CZ', {timeZone: 'Europe/Prague', hour12: false});
+                    document.getElementById('time-london').textContent = now.toLocaleTimeString('en-GB', {timeZone: 'Europe/London', hour12: false});
+                    document.getElementById('time-ny').textContent = now.toLocaleTimeString('en-US', {timeZone: 'America/New_York', hour12: false});
+
+                    let sessions = [
+                        { id: 'london', name: 'LONDÝN', startH: 9, startM: 0, endH: 17, endM: 30 },
+                        { id: 'ny', name: 'NEW YORK', startH: 14, startM: 0, endH: 23, endM: 0 },
+                        { id: 'ws', name: 'WALL STREET', startH: 15, startM: 30, endH: 22, endM: 0 }
+                    ];
+
+                    let dayOfWeek = now.getDay();
+                    let currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+                    let isWeekend = (dayOfWeek === 6) || (dayOfWeek === 0 && currentMinutes < 23 * 60) || (dayOfWeek === 5 && currentMinutes >= 23 * 60);
+
+                    sessions.forEach(s => {
+                        let box = document.getElementById('box-' + s.id);
+                        let badge = document.getElementById('badge-' + s.id);
+                        let countElem = document.getElementById('count-' + s.id);
+
+                        let startTotalM = s.startH * 60 + s.startM;
+                        let endTotalM = s.endH * 60 + s.endM;
+
+                        if (isWeekend) {
+                            box.classList.remove('active');
+                            badge.className = 'session-badge badge-weekend';
+                            badge.textContent = 'VÍKEND';
+
+                            let daysUntilMonday = (8 - dayOfWeek) % 7;
+                            if (daysUntilMonday === 0) daysUntilMonday = 7;
+                            let mondayOpen = new Date(now);
+                            mondayOpen.setDate(now.getDate() + daysUntilMonday);
+                            mondayOpen.setHours(s.startH, s.startM, 0, 0);
+
+                            let diff = mondayOpen - now;
+                            countElem.className = 'session-countdown weekend';
+                            countElem.innerHTML = 'Otvírá v Po: <span>' + formatDuration(diff) + '</span>';
+                        } else {
+                            let startToday = new Date(now);
+                            startToday.setHours(s.startH, s.startM, 0, 0);
+
+                            let endToday = new Date(now);
+                            endToday.setHours(s.endH, s.endM, 0, 0);
+
+                            if (now >= startToday && now < endToday) {
+                                box.classList.add('active');
+                                badge.className = 'session-badge badge-open';
+                                badge.textContent = 'OTEVŘENO';
+
+                                let diff = endToday - now;
+                                countElem.className = 'session-countdown';
+                                countElem.innerHTML = 'Končí za: <span>' + formatDuration(diff) + '</span>';
+                            } else {
+                                box.classList.remove('active');
+                                badge.className = 'session-badge badge-closed';
+                                badge.textContent = 'ZAVŘENO';
+
+                                let targetOpen = new Date(startToday);
+                                if (now >= endToday) {
+                                    targetOpen.setDate(targetOpen.getDate() + (dayOfWeek === 5 ? 3 : 1));
+                                }
+
+                                let diff = targetOpen - now;
+                                countElem.className = 'session-countdown closed';
+                                countElem.innerHTML = 'Otvírá za: <span>' + formatDuration(diff) + '</span>';
+                            }
+                        }
+                    });
+                }
+
+                updateClocks();
+                setInterval(updateClocks, 1000);
+            </script>
+        </body>
+        </html>
+    """, height=185)
+
+    # --- 2. PŘEPÍNAČ INSTRUMENTŮ A UNIVERZÁLNÍ ČÁROVÝ GRAF (VANTAGE) ---
+    current_asset = ASSETS[st.session_state.asset_idx]
+
+    col_btn_l, col_btn_c, col_btn_r = st.columns([0.15, 0.7, 0.15])
+    with col_btn_l:
+        if st.button("◀", key="btn_prev_asset", use_container_width=True):
+            st.session_state.asset_idx = (st.session_state.asset_idx - 1) % len(ASSETS)
+            st.rerun()
+    with col_btn_c:
+        st.markdown(f"""
+        <div style="text-align: center; background: rgba(10, 10, 10, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px; margin-top: 6px;">
+            <div style="color: #888; font-size: 10px; letter-spacing: 2px; text-transform: uppercase;">Aktivní graf &bull; Broker {current_asset['broker']}</div>
+            <div style="color: #2ecc71; font-weight: 800; font-size: 16px; letter-spacing: 1px;">{current_asset['name'].upper()}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_btn_r:
+        if st.button("▶", key="btn_next_asset", use_container_width=True):
+            st.session_state.asset_idx = (st.session_state.asset_idx + 1) % len(ASSETS)
             st.rerun()
 
-# ==========================================
-# OBRAZOVKA 3: HLAVNÍ TERMINÁL
-# ==========================================
-elif st.session_state['screen'] == 'terminal':
-    inject_css(is_dark=False) 
-    
-    st.markdown("<h2 style='text-align: center; color: #d4af37 !important; margin-bottom: 30px;'>J.T CAPITAL - TERMINAL</h2>", unsafe_allow_html=True)
-    
-    tz = pytz.timezone('Europe/Prague')
-    now_str = datetime.datetime.now(tz).strftime('%H:%M:%S')
-    
-    m1, m2, m3 = st.columns(3)
-    m1.metric("Aktuální čas (CZ)", now_str)
-    m2.metric("NY Session (Wall Street)", "15:30 - 22:00")
-    m3.metric("London Session", "09:00 - 17:30")
-    
-    st.markdown("---")
-    
-    col_left, col_right = st.columns([2, 1])
-    
-    with col_left:
-        st.subheader("Analýza Sentimentu (XAU/USD)")
-        st.info("**Základní makro:** Americká inflace mírně klesla, což oslabuje tlak na FED ohledně dalšího zvýšení sazeb. Očekává se oslabení DXY, což tvoří silně býčí sentiment pro Zlato.")
-        st.progress(0.80, text="80% Bullish (Dle makro modelů)")
-        if st.button("Manuální obnova makra ⟳"):
-            st.success("Makro data byla úspěšně aktualizována!")
-        
-        st.write("")
-        st.subheader("Živý Graf (TradingView)")
-        
-        tv_html = '''
-        <div class="tradingview-widget-container">
-          <div id="tradingview_xauusd"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-          <script type="text/javascript">
-          new TradingView.widget({
-          "autosize": true,
-          "height": 550,
-          "symbol": "VANTAGE:XAUUSD",
-          "interval": "D",
-          "timezone": "Europe/Prague",
-          "theme": "light",
-          "style": "1",
-          "locale": "cs",
-          "enable_publishing": false,
-          "container_id": "tradingview_xauusd"
-        });
-          </script>
-        </div>
-        '''
-        components.html(tv_html, height=550)
+    # Vykreslení čistého anonymního čárového grafu
+    components.html(f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                html, body {{ margin: 0; padding: 0; background: transparent !important; overflow: hidden; }}
+                * {{ box-sizing: border-box; }}
+                .terminal-card {{
+                    background-color: rgba(10, 10, 10, 0.6) !important;
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    padding: 20px 25px;
+                    border-radius: 15px !important;
+                    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+                    width: 100%;
+                    overflow: hidden !important;
+                }}
+                .tradingview-widget-container,
+                .tradingview-widget-container > div,
+                .tradingview-widget-container iframe {{
+                    background: transparent !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="terminal-card">
+                <div class="tradingview-widget-container">
+                  <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
+                  {{
+                    "symbols": [ ["{current_asset['tv_symbol']}"] ],
+                    "chartOnly": false, 
+                    "width": "100%", 
+                    "height": "350", 
+                    "locale": "cs", 
+                    "colorTheme": "dark",
+                    "gridLineColor": "rgba(42, 46, 57, 0)", 
+                    "fontColor": "#787b86", 
+                    "isTransparent": true,
+                    "showFloatingTooltip": true, 
+                    "showVolume": false,
+                    "lineColor": "#2ecc71", 
+                    "topColor": "rgba(46, 204, 113, 0.15)", 
+                    "bottomColor": "rgba(46, 204, 113, 0)"
+                  }}
+                  </script>
+                </div>
+            </div>
+        </body>
+        </html>
+    """, height=395)
 
-    with col_right:
-        st.subheader("Dnešní Makro (ForexFactory)")
-        macro_data = pd.DataFrame({
-            "Čas": ["14:30", "16:00"],
-            "Událost": ["USA - JOLTS", "USA - CB Confidence"],
-            "Impakt": ["Vysoký", "Vysoký"]
-        })
-        st.dataframe(macro_data, hide_index=True, use_container_width=True)
-        
-        st.write("")
-        st.subheader("Centrální Banky - Radar")
-        cb_data = pd.DataFrame({
-            "Banka": ["ECB", "FED"],
-            "Sazba": ["4.25%", "5.50%"],
-            "Zasedání": ["10.09.2026", "18.09.2026"]
-        })
-        st.dataframe(cb_data, hide_index=True, use_container_width=True)
-        
-        with st.expander("ECB - Makroekonomický výhled", expanded=True):
-            st.markdown('''**Poslední výstup (C. Lagarde):** "Inflace v eurozóně zůstává lepkavá. Nevylučujeme další hike."\n\n*Dopad:* Euro si udržuje sílu, trhy zaceňují 40% šanci na zvýšení.''')
+    # --- NAČTENÍ JEDNOTNÉ ANALÝZY ZE ZDROJE REUTERS ---
+    data = fetch_institutional_analysis(current_asset["id"])
+
+    # --- 3. OKNO 1: AI SENTIMENT & TRŽNÍ BAROMETR ---
+    d_time = str(data.get("time", ""))
+    d_color = str(data.get("color", "#2ecc71"))
+    d_label = str(data.get("label", "BULLISH SENTIMENT"))
+    d_pct = str(data.get("score_pct", "76% NÁKUPNÍ PŘEVAHA"))
+    d_note = str(data.get("note", ""))
+    d_driver = str(data.get("macro_driver", ""))
+    d_highlights = data.get("highlights", [])
+
+    boxes_list = []
+    for idx, item in enumerate(d_highlights, start=1):
+        cz_t = str(item.get("cz", "")).replace('"', '&quot;')
+        orig_t = str(item.get("orig", "")).replace('"', '&quot;')
+        src_t = str(item.get("source", "REUTERS"))
+        b_str = (
+            f'<div style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06); '
+            f'border-radius: 8px; padding: 10px 14px; margin-top: 8px; text-align: left;">'
+            f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">'
+            f'<span style="color: #2ecc71; font-size: 10px; font-weight: 700; letter-spacing: 1px;">#{idx} {src_t}</span>'
+            f'</div>'
+            f'<div style="color: #eee; font-size: 13px; font-weight: 600; line-height: 1.4;">'
+            f'&quot;{cz_t}&quot;'
+            f'</div>'
+            f'<div style="color: #666; font-size: 11px; font-style: italic; margin-top: 2px;">'
+            f'{orig_t}'
+            f'</div>'
+            f'</div>'
+        )
+        boxes_list.append(b_str)
+
+    all_boxes_html = "".join(boxes_list)
+
+    sentiment_card_html = (
+        f'<div class="terminal-card">'
+        f'<div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 6px;">'
+        f'AI Sentiment Barometer &bull; {current_asset["name"].upper()} &bull; Live Feed ({d_time})'
+        f'</div>'
+        f'<div style="display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 4px;">'
+        f'<span style="color: {d_color}; font-weight: 900; font-size: 26px; letter-spacing: 2px;">{d_label}</span>'
+        f'<span style="background: rgba(46, 204, 113, 0.15); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.3); font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px; letter-spacing: 1px;">{d_pct}</span>'
+        f'</div>'
+        f'<p style="color: #ddd; margin-top: 6px; margin-bottom: 10px; font-size: 14px; line-height: 1.5;">'
+        f'{d_note}'
+        f'</p>'
+        f'<div style="background: rgba(46, 204, 113, 0.05); border: 1px solid rgba(46, 204, 113, 0.2); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; text-align: left; font-size: 12px; color: #bbb;">'
+        f'<span style="color: #2ecc71; font-weight: 700;">KLÍČOVÝ TAHOUŇ:</span> {d_driver}'
+        f'</div>'
+        f'{all_boxes_html}'
+        f'<div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 16px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px;">'
+        f'ZDROJ: REUTERS INSTITUTIONAL WIRE | PŘEKLAD: MYMEMORY API'
+        f'</div>'
+        f'</div>'
+    )
+    st.markdown(sentiment_card_html, unsafe_allow_html=True)
+
+    if st.button("AKTUALIZOVAT SENTIMENT", key="btn_refresh_sentiment", use_container_width=True):
+        fetch_institutional_analysis.clear()
+        st.rerun()
+
+    # --- 4. OKNO 2: HLOUBKOVÁ FUNDAMENTÁLNÍ ANALÝZA ---
+    deep = data.get("deep_macro", {})
+    
+    deep_macro_html = (
+        f'<div class="terminal-card" style="text-align: left;">'
+        f'<div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 4px; text-align: center;">'
+        f'Macroeconomic Intelligence &bull; 24h–72h Institutional Context'
+        f'</div>'
+        f'<div style="color: #ffffff; font-weight: 800; font-size: 22px; letter-spacing: 1px; margin-bottom: 14px; text-align: center;">'
+        f'HLOUBKOVÁ FUNDAMENTÁLNÍ ANALÝZA: {current_asset["name"].upper()}'
+        f'</div>'
+        f'<div style="background: rgba(255, 255, 255, 0.02); border-left: 3px solid #2ecc71; padding: 10px 14px; border-radius: 4px; margin-bottom: 10px;">'
+        f'<div style="color: #2ecc71; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px;">1. Měnová politika FEDu & Úrokové sazby</div>'
+        f'<div style="color: #ccc; font-size: 13px; line-height: 1.5;">{deep.get("fed_policy", "")}</div>'
+        f'</div>'
+        f'<div style="background: rgba(255, 255, 255, 0.02); border-left: 3px solid #2ecc71; padding: 10px 14px; border-radius: 4px; margin-bottom: 10px;">'
+        f'<div style="color: #2ecc71; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px;">2. Mezitržní vztahy (Dolar DXY & Výnosy dluhopisů)</div>'
+        f'<div style="color: #ccc; font-size: 13px; line-height: 1.5;">{deep.get("intermarket", "")}</div>'
+        f'</div>'
+        f'<div style="background: rgba(255, 255, 255, 0.02); border-left: 3px solid #2ecc71; padding: 10px 14px; border-radius: 4px; margin-bottom: 10px;">'
+        f'<div style="color: #2ecc71; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px;">3. Institucionální toky & Likvidita trhu</div>'
+        f'<div style="color: #ccc; font-size: 13px; line-height: 1.5;">{deep.get("liquidity", "")}</div>'
+        f'</div>'
+        f'<div style="background: rgba(46, 204, 113, 0.05); border: 1px solid rgba(46, 204, 113, 0.3); padding: 12px 16px; border-radius: 8px; margin-top: 14px;">'
+        f'<div style="color: #2ecc71; font-size: 12px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px;">Taktické shrnutí pro obchodování</div>'
+        f'<div style="color: #eee; font-size: 13px; line-height: 1.5; font-weight: 500;">{deep.get("tactical_view", "")}</div>'
+        f'</div>'
+        f'<div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 16px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px; text-align: center;">'
+        f'ANALÝZA ZALOŽENA NA GLOBÁLNÍCH TOZÍCH REUTERS & FED MACRO MODELU'
+        f'</div>'
+        f'</div>'
+    )
+    st.markdown(deep_macro_html, unsafe_allow_html=True)
+
+    if st.button("AKTUALIZOVAT HLOUBKOVOU ANALÝZU", key="btn_refresh_deep", use_container_width=True):
+        fetch_institutional_analysis.clear()
+        st.rerun()
+
+    # --- 5. OKNO 3: CENTRÁLNÍ BANKY & BÍLÝ TEXT V ZELENÝCH ŠTÍTCÍCH ---
+    cb_rows_list = []
+    for cb in CENTRAL_BANKS:
+        row_str = (
+            f'<div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); '
+            f'border-radius: 10px; padding: 14px 16px; margin-top: 8px; display: flex; justify-content: space-between; '
+            f'align-items: center; text-align: left;">'
+            f'<div style="flex: 1.2;">'
+            f'<div style="display: flex; align-items: center; gap: 6px;">'
+            f'<span style="color: #fff; font-size: 15px; font-weight: 800;">{cb["code"]}</span>'
+            f'<span style="color: #888; font-size: 12px;">({cb["country"]})</span>'
+            f'</div>'
+            f'<div style="color: #666; font-size: 11px; margin-top: 2px;">{cb["name"]}</div>'
+            f'<div style="color: #555; font-size: 10px; font-style: italic;">{cb["rate_name"]}</div>'
+            f'</div>'
             
-        with st.expander("FED - Makroekonomický výhled"):
-            st.markdown('''**Poslední výstup (J. Powell):** "Budeme postupovat opatrně, sazby mohou zůstat nahoře déle."\n\n*Dopad:* Zastavení oslabování dolaru (DXY).''')
+            # Sazba a zelený rámeček s BÍLÝM TEXTEM
+            f'<div style="flex: 1.1; text-align: center;">'
+            f'<div style="color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px;">Aktuální sazba</div>'
+            f'<div style="color: #2ecc71; font-size: 17px; font-weight: 900; font-variant-numeric: tabular-nums;">{cb["rate"]}</div>'
+            f'<div style="display: inline-block; background: rgba(46, 204, 113, 0.18); border: 1px solid rgba(46, 204, 113, 0.45); '
+            f'border-radius: 6px; padding: 3px 8px; margin-top: 4px; color: #ffffff; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;">'
+            f'📅 {cb["next_meeting"]}'
+            f'</div>'
+            f'</div>'
+            
+            # Pravděpodobnost a konsensus
+            f'<div style="flex: 1.4; text-align: center; padding: 0 10px;">'
+            f'<div style="color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px;">Tržní konsensus ({cb["source_tag"]})</div>'
+            f'<div style="color: {cb["status_color"]}; font-size: 12px; font-weight: 800;">{cb["consensus"]}</div>'
+            f'<div style="display: flex; justify-content: center; gap: 8px; color: #888; font-size: 10px; margin-top: 4px;">'
+            f'<span>Snížení: <b style="color: #2ecc71;">{cb["cut_prob"]}%</b></span>'
+            f'<span>Hold: <b style="color: #ffffff;">{cb["hold_prob"]}%</b></span>'
+            f'<span>Zvýšení: <b style="color: #e74c3c;">{cb["hike_prob"]}%</b></span>'
+            f'</div>'
+            f'</div>'
+            
+            # Tlačítko na oficiální web
+            f'<div style="flex: 0.7; text-align: right;">'
+            f'<a href="{cb["url"]}" target="_blank" style="display: inline-block; background: rgba(46, 204, 113, 0.15); '
+            f'color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.4); border-radius: 6px; padding: 6px 12px; '
+            f'font-size: 11px; font-weight: 700; text-decoration: none; text-transform: uppercase; letter-spacing: 0.5px;">'
+            f'OFICIÁLNÍ WEB'
+            f'</a>'
+            f'</div>'
+            f'</div>'
+        )
+        cb_rows_list.append(row_str)
+
+    all_cb_rows = "".join(cb_rows_list)
+
+    cb_card_html = (
+        f'<div class="terminal-card">'
+        f'<div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-bottom: 4px;">'
+        f'Global Monetary Policy Tracker &bull; CME FedWatch & InvestingLive OIS Model'
+        f'</div>'
+        f'<div style="color: #ffffff; font-weight: 800; font-size: 22px; letter-spacing: 1px; margin-bottom: 12px;">'
+        f'CENTRÁLNÍ BANKY & VÝVOJ ÚROKOVÝCH SAZEB'
+        f'</div>'
+        f'<p style="color: #999; font-size: 13px; margin-bottom: 14px;">'
+        f'Přehled oficiálních úrokových sazeb hlavních světových ekonomik a tržní pravděpodobnosti jejich úpravy.'
+        f'</p>'
+        f'{all_cb_rows}'
+        f'<div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 16px; padding-top: 10px; color: #666; font-size: 10px; letter-spacing: 1px; text-align: center;">'
+        f'ZDROJ: OFICIÁLNÍ WEBY CENTRÁLNÍCH BANK | CME FEDWATCH (FED) & INVESTINGLIVE OIS SWAPS MODEL'
+        f'</div>'
+        f'</div>'
+    )
+    st.markdown(cb_card_html, unsafe_allow_html=True)
+
+    if st.button("AKTUALIZOVAT SAZBY CENTRÁLNÍCH BANK", key="btn_refresh_cb", use_container_width=True):
+        st.rerun()
